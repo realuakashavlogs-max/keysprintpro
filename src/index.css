@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-main: #F5F7FA;
+    --bg-card: #FFFFFF;
+    --text-primary: #192230;
+    --text-secondary: #647184;
+    --brand-primary: #315CE8;
+    --brand-secondary: #117C78;
+    --brand-soft: #EEF3FF;
+    --border-subtle: #E1E7EF;
+    --feedback-correct: #16845B;
+    --feedback-incorrect: #D64550;
+    --accent-amber: #E8AC45;
+    --color-disabled: #A0A9B6;
+  }
+
+  body {
+    background-color: #F5F7FA;
+    color: #192230;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

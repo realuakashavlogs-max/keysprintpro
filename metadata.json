@@ -1,0 +1,6 @@
+{
+  "name": "KeySprint - Professional Touch Typing Master",
+  "description": "Master touch typing step by step with KeySprint's 100-level curriculum, featuring live vector hand-placement guidance, interactive QWERTY keyboard, and real-time accuracy analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
