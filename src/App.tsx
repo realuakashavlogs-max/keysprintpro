@@ -115,6 +115,11 @@ export default function App() {
 
   const completedCount = Object.values(levelsProgress).filter((p) => p.completed).length;
 
+  const isTypingView =
+    currentView === 'lesson' ||
+    currentView === 'speed_test' ||
+    currentView === 'free_practice';
+
   return (
     <div className="min-h-screen bg-[#F5F7FA] text-[#192230] flex flex-col selection:bg-[#315CE8]/20">
       {/* Navigation */}
@@ -127,20 +132,24 @@ export default function App() {
         onUpdateSettings={handleUpdateSettings}
       />
 
-      {/* Top Monetization Leaderboard Banner (728x90 / 468x60 / 320x50) */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-3">
-        <ResponsiveAdLeaderboard />
-      </div>
+      {/* Top Monetization Leaderboard Banner (shown on non-typing views) */}
+      {!isTypingView && (
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-3">
+          <ResponsiveAdLeaderboard />
+        </div>
+      )}
 
-      {/* Main Content Area with Side Skyscraper Banners on Large Screens */}
+      {/* Main Content Area */}
       <div className="flex-1 w-full max-w-[1560px] mx-auto px-2 sm:px-4 flex justify-center items-start gap-4">
-        {/* Left Skyscraper Banner (160x600) on Extra Large Screens */}
-        <aside className="hidden 2xl:flex flex-col items-center sticky top-20 pt-4 shrink-0">
-          <AdBanner type="160x600" />
-        </aside>
+        {/* Left Skyscraper Banner (160x600) on Extra Large Screens (Non-typing only) */}
+        {!isTypingView && (
+          <aside className="hidden 2xl:flex flex-col items-center sticky top-20 pt-4 shrink-0">
+            <AdBanner type="160x600" />
+          </aside>
+        )}
 
         {/* Central Main Content */}
-        <main className="flex-1 w-full max-w-5xl">
+        <main className={`flex-1 w-full ${isTypingView ? 'max-w-4xl' : 'max-w-5xl'}`}>
           {currentView === 'home' && (
             <HomeView
               levelsProgress={levelsProgress}
@@ -206,32 +215,36 @@ export default function App() {
           )}
         </main>
 
-        {/* Right Skyscraper Banner (160x300 or 160x600) on Extra Large Screens */}
-        <aside className="hidden 2xl:flex flex-col items-center sticky top-20 pt-4 shrink-0">
-          <AdBanner type="160x300" />
-          <div className="mt-4 rounded-xl border border-[#E1E7EF] bg-white p-3 text-center w-[160px] shadow-xs">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#315CE8] block mb-1">
-              Speed Challenge
-            </span>
-            <p className="text-[11px] text-[#647184] mb-2 leading-tight">
-              Test your global ranking
-            </p>
-            <a
-              href={SMARTLINK_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block w-full rounded-lg bg-[#315CE8] py-1.5 text-[11px] font-bold text-white hover:bg-[#2546B8] transition-colors"
-            >
-              Start Now →
-            </a>
-          </div>
-        </aside>
+        {/* Right Skyscraper Banner on Extra Large Screens (Non-typing only) */}
+        {!isTypingView && (
+          <aside className="hidden 2xl:flex flex-col items-center sticky top-20 pt-4 shrink-0">
+            <AdBanner type="160x300" />
+            <div className="mt-4 rounded-xl border border-[#E1E7EF] bg-white p-3 text-center w-[160px] shadow-xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#315CE8] block mb-1">
+                Speed Challenge
+              </span>
+              <p className="text-[11px] text-[#647184] mb-2 leading-tight">
+                Test your global ranking
+              </p>
+              <a
+                href={SMARTLINK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block w-full rounded-lg bg-[#315CE8] py-1.5 text-[11px] font-bold text-white hover:bg-[#2546B8] transition-colors"
+              >
+                Start Now →
+              </a>
+            </div>
+          </aside>
+        )}
       </div>
 
-      {/* Bottom Monetization Leaderboard Banner */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-6">
-        <ResponsiveAdLeaderboard />
-      </div>
+      {/* Bottom Monetization Leaderboard Banner (shown on non-typing views) */}
+      {!isTypingView && (
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+          <ResponsiveAdLeaderboard />
+        </div>
+      )}
 
       {/* Diploma Modal */}
       <MasterDiplomaModal

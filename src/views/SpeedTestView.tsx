@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Gauge, Clock, Award, RotateCcw, Zap, Target, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Gauge, Clock, Award, RotateCcw, Zap, Target, ArrowRight, Maximize2 } from 'lucide-react';
 import { TypingArea, TypingResult } from '../components/TypingArea';
-import { VirtualKeyboard } from '../components/VirtualKeyboard';
+import { AnimatedKeyboardWithHands } from '../components/AnimatedKeyboardWithHands';
 import { HandGuide } from '../components/HandGuide';
+import { FocusTypingSession } from '../components/FocusTypingSession';
 import { recordPracticeSession } from '../utils/storage';
 import { UserSettings, UserStats } from '../types/typing';
 import { soundEngine } from '../utils/audio';
@@ -39,12 +40,15 @@ export const SpeedTestView: React.FC<SpeedTestViewProps> = ({
 }) => {
   const [selectedDuration, setSelectedDuration] = useState<number>(60);
   const [passageIndex, setPassageIndex] = useState<number>(0);
-  const [activeChar, setActiveChar] = useState<string>('');
+  const activePassage = SPEED_TEST_PASSAGES[passageIndex % SPEED_TEST_PASSAGES.length];
+  const [activeChar, setActiveChar] = useState<string>(activePassage[0] || 'T');
   const [physicalKey, setPhysicalKey] = useState<string>('');
   const [testResult, setTestResult] = useState<TypingResult | null>(null);
   const [testKey, setTestKey] = useState<number>(0);
 
-  const activePassage = SPEED_TEST_PASSAGES[passageIndex % SPEED_TEST_PASSAGES.length];
+  useEffect(() => {
+    setActiveChar(activePassage[0] || 'T');
+  }, [passageIndex, testKey]);
 
   const handleComplete = (res: TypingResult) => {
     setTestResult(res);
