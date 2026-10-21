@@ -13,7 +13,6 @@ import { FreePracticeView } from './views/FreePracticeView';
 import { ProgressView } from './views/ProgressView';
 import { SettingsView } from './views/SettingsView';
 import { MasterDiplomaModal } from './components/MasterDiplomaModal';
-import { ResponsiveAdLeaderboard, AdBanner, SMARTLINK_URL } from './components/AdBanner';
 import {
   loadActiveLevelId,
   loadLevelsProgress,
@@ -115,10 +114,29 @@ export default function App() {
 
   const completedCount = Object.values(levelsProgress).filter((p) => p.completed).length;
 
-  const isTypingView =
-    currentView === 'lesson' ||
-    currentView === 'speed_test' ||
-    currentView === 'free_practice';
+  // Active Typing Mode: Dedicated full-viewport distraction-free screen (fits 100dvh without page scroll)
+  if (currentView === 'lesson') {
+    return (
+      <div className="h-[100dvh] w-full overflow-hidden bg-[#F5F7FA] text-[#192230] select-none">
+        <LessonView
+          levelId={activeLevelId}
+          levelsProgress={levelsProgress}
+          settings={settings}
+          stats={stats}
+          onUpdateProgress={handleUpdateProgress}
+          onSelectLevel={handleStartLevel}
+          onExit={() => handleNavigate('home')}
+          onOpen100DiplomaModal={() => setIsDiplomaOpen(true)}
+        />
+        <MasterDiplomaModal
+          isOpen={isDiplomaOpen}
+          stats={stats}
+          completedLevelsCount={completedCount}
+          onClose={() => setIsDiplomaOpen(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] text-[#192230] flex flex-col selection:bg-[#315CE8]/20">
@@ -132,24 +150,9 @@ export default function App() {
         onUpdateSettings={handleUpdateSettings}
       />
 
-      {/* Top Monetization Leaderboard Banner (shown on non-typing views) */}
-      {!isTypingView && (
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-3">
-          <ResponsiveAdLeaderboard />
-        </div>
-      )}
-
       {/* Main Content Area */}
-      <div className="flex-1 w-full max-w-[1560px] mx-auto px-2 sm:px-4 flex justify-center items-start gap-4">
-        {/* Left Skyscraper Banner (160x600) on Extra Large Screens (Non-typing only) */}
-        {!isTypingView && (
-          <aside className="hidden 2xl:flex flex-col items-center sticky top-20 pt-4 shrink-0">
-            <AdBanner type="160x600" />
-          </aside>
-        )}
-
-        {/* Central Main Content */}
-        <main className={`flex-1 w-full ${isTypingView ? 'max-w-4xl' : 'max-w-5xl'}`}>
+      <div className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-center items-start">
+        <main className="w-full">
           {currentView === 'home' && (
             <HomeView
               levelsProgress={levelsProgress}
@@ -158,18 +161,6 @@ export default function App() {
               onStartLevel={handleStartLevel}
               onNavigateToLevels={handleNavigateToLevels}
               onNavigateToSpeedTest={() => handleNavigate('speed_test')}
-            />
-          )}
-
-          {currentView === 'lesson' && (
-            <LessonView
-              levelId={activeLevelId}
-              levelsProgress={levelsProgress}
-              settings={settings}
-              stats={stats}
-              onUpdateProgress={handleUpdateProgress}
-              onSelectLevel={handleStartLevel}
-              onOpen100DiplomaModal={() => setIsDiplomaOpen(true)}
             />
           )}
 
@@ -214,37 +205,7 @@ export default function App() {
             />
           )}
         </main>
-
-        {/* Right Skyscraper Banner on Extra Large Screens (Non-typing only) */}
-        {!isTypingView && (
-          <aside className="hidden 2xl:flex flex-col items-center sticky top-20 pt-4 shrink-0">
-            <AdBanner type="160x300" />
-            <div className="mt-4 rounded-xl border border-[#E1E7EF] bg-white p-3 text-center w-[160px] shadow-xs">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#315CE8] block mb-1">
-                Speed Challenge
-              </span>
-              <p className="text-[11px] text-[#647184] mb-2 leading-tight">
-                Test your global ranking
-              </p>
-              <a
-                href={SMARTLINK_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block w-full rounded-lg bg-[#315CE8] py-1.5 text-[11px] font-bold text-white hover:bg-[#2546B8] transition-colors"
-              >
-                Start Now →
-              </a>
-            </div>
-          </aside>
-        )}
       </div>
-
-      {/* Bottom Monetization Leaderboard Banner (shown on non-typing views) */}
-      {!isTypingView && (
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-6">
-          <ResponsiveAdLeaderboard />
-        </div>
-      )}
 
       {/* Diploma Modal */}
       <MasterDiplomaModal
@@ -255,7 +216,7 @@ export default function App() {
       />
 
       {/* Footer */}
-      <footer className="border-t border-[#E1E7EF] bg-white py-6 text-center text-xs text-[#647184] mt-8">
+      <footer className="border-t border-[#E1E7EF] bg-white py-6 text-center text-xs text-[#647184] mt-auto">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#315CE8] text-white font-mono text-xs font-bold shadow-xs">
@@ -268,12 +229,12 @@ export default function App() {
 
           <div className="flex items-center gap-4 text-[#647184]">
             <a
-              href={SMARTLINK_URL}
+              href="https://asiafilm.org/4/8f898fe854ee3f572c3a972f7c881cb0"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-[#315CE8] hover:underline flex items-center gap-1"
+              className="font-semibold text-[#315CE8] hover:underline flex items-center gap-1 cursor-pointer"
             >
-              <span>⚡ Partner Typing Rewards</span>
+              <span>⚡ Featured Partner Showcase</span>
             </a>
             <span className="text-[#CBD5E1]">•</span>
             <span>Structured Muscle Memory & Real-Time Hand Guidance</span>

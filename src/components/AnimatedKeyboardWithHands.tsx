@@ -117,7 +117,7 @@ export const AnimatedKeyboardWithHands: React.FC<AnimatedKeyboardWithHandsProps>
     <div className={`relative w-full max-w-[940px] mx-auto select-none ${className}`}>
       <svg
         viewBox={`0 0 ${KEYBOARD_WIDTH} ${KEYBOARD_HEIGHT + 30}`}
-        className="w-full h-auto drop-shadow-2xl overflow-visible"
+        className="w-full h-auto max-h-[38vh] sm:max-h-[42vh] mx-auto drop-shadow-xl overflow-visible block"
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>

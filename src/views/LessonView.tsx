@@ -3,29 +3,33 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  ChevronLeft,
-  ChevronRight,
-  BookOpen,
+  X,
+  RotateCcw,
+  Volume2,
+  VolumeX,
   Trophy,
-  CheckCircle,
-  HelpCircle,
+  BookOpen,
+  ArrowRight,
   Sparkles,
-  Info,
-  Maximize2,
 } from 'lucide-react';
-import { ALL_LEVELS, getLevelById, getNextLevel, getPreviousLevel } from '../data/levels';
-import { STAGES } from '../data/stages';
+import { ALL_LEVELS, getLevelById, getNextLevel } from '../data/levels';
 import { Level, LevelProgress, UserSettings, UserStats } from '../types/typing';
-import { TypingArea, TypingResult } from '../components/TypingArea';
+import { TypingResult } from '../components/TypingArea';
 import { AnimatedKeyboardWithHands } from '../components/AnimatedKeyboardWithHands';
-import { HandGuide } from '../components/HandGuide';
-import { FocusTypingSession } from '../components/FocusTypingSession';
 import { LevelCompletionModal } from '../components/LevelCompletionModal';
-import { assessLevelPassed } from '../utils/typingLogic';
+import { SponsorInterstitial } from '../components/SponsorInterstitial';
+import {
+  calculateWpm,
+  calculateAccuracy,
+  calculateCpm,
+  formatTime,
+  assessLevelPassed,
+} from '../utils/typingLogic';
 import { recordAssessmentResult, saveActiveLevelId } from '../utils/storage';
 import { soundEngine } from '../utils/audio';
+import { getFingerForKey } from '../data/fingerMapping';
 
 interface LessonViewProps {
   levelId: number;
@@ -34,6 +38,7 @@ interface LessonViewProps {
   stats: UserStats;
   onUpdateProgress: (newProgress: Record<number, LevelProgress>, newStats: UserStats) => void;
   onSelectLevel: (levelId: number) => void;
+  onExit: () => void;
   onOpen100DiplomaModal?: () => void;
 }
 
@@ -44,29 +49,35 @@ export const LessonView: React.FC<LessonViewProps> = ({
   stats,
   onUpdateProgress,
   onSelectLevel,
+  onExit,
   onOpen100DiplomaModal,
 }) => {
   const level: Level = getLevelById(levelId) || ALL_LEVELS[0];
-  const stage = STAGES.find((s) => s.id === level.stageId) || STAGES[0];
-  const currentProgress = levelsProgress[levelId] || {
-    levelId,
-    completed: false,
-    unlocked: true,
-    stars: 0,
-    bestWpm: 0,
-    bestAccuracy: 0,
-    bestCpm: 0,
-    attempts: 0,
-  };
+
+  const allExercises = [
+    ...level.exercises,
+    { ...level.assessment, isAssessment: true },
+  ];
 
   const [activeExerciseIdx, setActiveExerciseIdx] = useState<number>(0);
-  const [activeChar, setActiveChar] = useState<string>('');
-  const [physicallyPressedKey, setPhysicallyPressedKey] = useState<string>('');
-  const [showPostureDetails, setShowPostureDetails] = useState<boolean>(level.id === 1);
-  const [isFocusModeOpen, setIsFocusModeOpen] = useState<boolean>(false);
+  const currentExercise = allExercises[activeExerciseIdx] || allExercises[0];
+  const isFinalAssessment = activeExerciseIdx === allExercises.length - 1;
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  // Typing state
+  const [typedChars, setTypedChars] = useState<string[]>([]);
+  const [totalKeystrokes, setTotalKeystrokes] = useState<number>(0);
+  const [errorCount, setErrorCount] = useState<number>(0);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const [isCompleted, setIsCompleted] = useState<boolean>(false);
+  const [physicallyPressedKey, setPhysicallyPressedKey] = useState<string>('');
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(settings.soundEnabled);
+
+  // Modals
+  const [isResultModalOpen, setIsResultModalOpen] = useState<boolean>(false);
+  const [isInterstitialOpen, setIsInterstitialOpen] = useState<boolean>(false);
+  const [pendingNextLevelId, setPendingNextLevelId] = useState<number | null>(null);
+
   const [lastResult, setLastResult] = useState<TypingResult>({
     wpm: 0,
     cpm: 0,
@@ -80,239 +91,440 @@ export const LessonView: React.FC<LessonViewProps> = ({
   const [earnedStars, setEarnedStars] = useState<number>(0);
   const [coachFeedback, setCoachFeedback] = useState<string>('');
 
-  const allExercises = [
-    ...level.exercises,
-    { ...level.assessment, isAssessment: true },
-  ];
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textScrollRef = useRef<HTMLDivElement>(null);
+  const activeCharSpanRef = useRef<HTMLSpanElement>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const currentExercise = allExercises[activeExerciseIdx] || allExercises[0];
-  const isFinalAssessment = activeExerciseIdx === allExercises.length - 1;
+  const targetChars = useRef<string[]>([]);
+  targetChars.current = (currentExercise.targetText || '').split('');
 
+  const currentIndex = typedChars.length;
+  const activeChar =
+    !isCompleted && currentIndex < targetChars.current.length
+      ? targetChars.current[currentIndex]
+      : '';
+
+  const activeFingerInfo = activeChar ? getFingerForKey(activeChar) : null;
+
+  // Reset exercise state
+  const resetExercise = useCallback(() => {
+    setTypedChars([]);
+    setTotalKeystrokes(0);
+    setErrorCount(0);
+    setStartTime(null);
+    setElapsedSeconds(0);
+    setIsCompleted(false);
+    setPhysicallyPressedKey('');
+    setIsResultModalOpen(false);
+    setIsInterstitialOpen(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (containerRef.current) containerRef.current.focus();
+  }, []);
+
+  // When level or exercise changes
   useEffect(() => {
-    setActiveExerciseIdx(0);
-    setIsModalOpen(false);
-    setShowPostureDetails(level.id === 1);
+    resetExercise();
     saveActiveLevelId(level.id);
-    if (allExercises[0]?.targetText) {
-      setActiveChar(allExercises[0].targetText[0] || 'f');
-    }
-  }, [level.id]);
+  }, [level.id, activeExerciseIdx, resetExercise]);
 
+  // Auto-focus container on mount
   useEffect(() => {
-    if (currentExercise?.targetText) {
-      setActiveChar(currentExercise.targetText[0] || 'f');
+    if (containerRef.current) {
+      containerRef.current.focus();
     }
-  }, [activeExerciseIdx]);
+  }, []);
 
-  const handleCharacterTyped = (char: string, physicalKey: string) => {
-    setActiveChar(char);
-    setPhysicallyPressedKey(physicalKey);
-  };
+  // Finish typing logic
+  const handleFinish = useCallback(
+    (timeExceeded: boolean = false) => {
+      setIsCompleted(true);
+      if (timerRef.current) clearInterval(timerRef.current);
 
-  const handleComplete = (res: TypingResult) => {
-    setLastResult(res);
+      const duration = Math.max(1, elapsedSeconds || 1);
+      let correct = 0;
+      typedChars.forEach((ch, idx) => {
+        if (idx < targetChars.current.length && ch === targetChars.current[idx]) {
+          correct++;
+        }
+      });
 
-    const evalResult = assessLevelPassed(
-      res.accuracy,
-      res.wpm,
-      level.minAccuracy,
-      level.targetWpm
-    );
+      const finalWpm = calculateWpm(correct, duration);
+      const finalCpm = calculateCpm(correct, duration);
+      const finalAccuracy = calculateAccuracy(correct, totalKeystrokes);
 
-    setPassedAssessment(evalResult.passed);
-    setEarnedStars(evalResult.stars);
-    setCoachFeedback(evalResult.message);
+      const res: TypingResult = {
+        wpm: finalWpm,
+        cpm: finalCpm,
+        accuracy: finalAccuracy,
+        elapsedSeconds: duration,
+        errors: errorCount,
+        totalKeystrokes: Math.max(totalKeystrokes, correct + errorCount),
+        correctChars: correct,
+        timeLimitExceeded: timeExceeded,
+      };
 
-    if (evalResult.passed) {
-      soundEngine.playSuccessFanfare();
-    }
+      setLastResult(res);
 
-    if (isFinalAssessment) {
-      const { progress, stats: updatedStats } = recordAssessmentResult(
-        level.id,
-        res.wpm,
-        res.accuracy,
-        res.cpm,
-        evalResult.passed,
-        evalResult.stars,
-        res.elapsedSeconds,
-        res.totalKeystrokes,
-        res.correctChars,
-        res.errors
+      const evalResult = assessLevelPassed(
+        finalAccuracy,
+        finalWpm,
+        level.minAccuracy,
+        level.targetWpm
       );
-      onUpdateProgress(progress, updatedStats);
 
-      if (level.id === 100 && evalResult.passed && onOpen100DiplomaModal) {
-        setTimeout(() => {
-          onOpen100DiplomaModal();
-        }, 1200);
+      setPassedAssessment(evalResult.passed);
+      setEarnedStars(evalResult.stars);
+      setCoachFeedback(evalResult.message);
+
+      if (evalResult.passed) {
+        soundEngine.playSuccessFanfare();
       }
+
+      if (isFinalAssessment) {
+        const { progress, stats: updatedStats } = recordAssessmentResult(
+          level.id,
+          finalWpm,
+          finalAccuracy,
+          finalCpm,
+          evalResult.passed,
+          evalResult.stars,
+          duration,
+          res.totalKeystrokes,
+          correct,
+          errorCount
+        );
+        onUpdateProgress(progress, updatedStats);
+
+        if (level.id === 100 && evalResult.passed && onOpen100DiplomaModal) {
+          setTimeout(() => {
+            onOpen100DiplomaModal();
+          }, 1200);
+        }
+      }
+
+      setIsResultModalOpen(true);
+    },
+    [
+      elapsedSeconds,
+      typedChars,
+      totalKeystrokes,
+      errorCount,
+      level.minAccuracy,
+      level.targetWpm,
+      level.id,
+      isFinalAssessment,
+      onUpdateProgress,
+      onOpen100DiplomaModal,
+    ]
+  );
+
+  // Timer interval
+  useEffect(() => {
+    if (startTime && !isCompleted) {
+      timerRef.current = setInterval(() => {
+        const now = Date.now();
+        const secs = Math.max(1, Math.round((now - startTime) / 1000));
+        setElapsedSeconds(secs);
+
+        if (level.timeLimitSeconds && secs >= level.timeLimitSeconds) {
+          handleFinish(true);
+        }
+      }, 200);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
     }
 
-    setIsModalOpen(true);
-  };
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [startTime, isCompleted, level.timeLimitSeconds, handleFinish]);
 
+  // Global window keydown listener for seamless physical typing anywhere on screen
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (isResultModalOpen || isInterstitialOpen) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onExit();
+        return;
+      }
+
+      if (isCompleted) return;
+
+      // Ignore modifier keys alone
+      if (['Control', 'Alt', 'Meta', 'CapsLock', 'Tab'].includes(e.key)) {
+        return;
+      }
+
+      // Prevent page scrolling on Space or browser navigation on Backspace
+      if (e.key === ' ' || e.key === 'Backspace' || e.code === 'Space') {
+        e.preventDefault();
+      }
+
+      // Handle Backspace
+      if (e.key === 'Backspace') {
+        setPhysicallyPressedKey('Backspace');
+        setTimeout(() => setPhysicallyPressedKey(''), 100);
+        if (typedChars.length > 0) {
+          setTypedChars((prev) => prev.slice(0, -1));
+          if (soundEnabled) soundEngine.playKeyClick();
+        }
+        return;
+      }
+
+      if (e.key.length === 1) {
+        if (!startTime) {
+          setStartTime(Date.now());
+        }
+
+        setPhysicallyPressedKey(e.key);
+        setTimeout(() => setPhysicallyPressedKey(''), 100);
+
+        const expectedChar = targetChars.current[typedChars.length];
+        const isCorrect = e.key === expectedChar;
+
+        setTotalKeystrokes((prev) => prev + 1);
+
+        if (isCorrect) {
+          if (soundEnabled) soundEngine.playKeyClick();
+        } else {
+          setErrorCount((prev) => prev + 1);
+          if (soundEnabled) soundEngine.playErrorBuzz();
+        }
+
+        const nextTyped = [...typedChars, e.key];
+        setTypedChars(nextTyped);
+
+        // Check if text is finished
+        if (nextTyped.length >= targetChars.current.length) {
+          setTimeout(() => handleFinish(false), 50);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [
+    isResultModalOpen,
+    isInterstitialOpen,
+    isCompleted,
+    typedChars,
+    startTime,
+    soundEnabled,
+    handleFinish,
+    onExit,
+  ]);
+
+  // Next exercise within current level
   const handleNextExercise = () => {
-    setIsModalOpen(false);
+    setIsResultModalOpen(false);
     if (activeExerciseIdx < allExercises.length - 1) {
       setActiveExerciseIdx((prev) => prev + 1);
     }
   };
 
-  const handleNextLevel = () => {
-    setIsModalOpen(false);
-    const next = getNextLevel(level.id);
-    if (next && levelsProgress[next.id]?.unlocked) {
-      onSelectLevel(next.id);
-    }
-  };
-
-  const handleRetry = () => {
-    setIsModalOpen(false);
-  };
-
-  const prevLevel = getPreviousLevel(level.id);
+  // Next level handler: Triggers the Sponsor Interstitial (Link 2) before advancing
   const nextLevel = getNextLevel(level.id);
   const isNextLevelUnlocked = nextLevel ? levelsProgress[nextLevel.id]?.unlocked : false;
 
+  const handleNextLevelClick = () => {
+    setIsResultModalOpen(false);
+    if (nextLevel) {
+      setPendingNextLevelId(nextLevel.id);
+      setIsInterstitialOpen(true);
+    }
+  };
+
+  // When interstitial 5-second countdown finishes and user continues
+  const handleContinueAfterInterstitial = () => {
+    setIsInterstitialOpen(false);
+    if (pendingNextLevelId) {
+      onSelectLevel(pendingNextLevelId);
+      setPendingNextLevelId(null);
+    }
+  };
+
+  // Live metrics calculation
+  let correctCount = 0;
+  typedChars.forEach((ch, idx) => {
+    if (ch === targetChars.current[idx]) correctCount++;
+  });
+  const liveWpm = calculateWpm(correctCount, elapsedSeconds);
+  const liveAccuracy = calculateAccuracy(correctCount, totalKeystrokes);
+  const remainingTime = level.timeLimitSeconds
+    ? Math.max(0, level.timeLimitSeconds - elapsedSeconds)
+    : elapsedSeconds;
+
   return (
-    <div className="flex flex-col gap-3 pb-8 max-w-4xl mx-auto">
-      {/* Sleek Minimalist Lesson Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-[#E1E7EF] bg-white px-4 py-2.5 shadow-xs">
-        <div className="flex items-center gap-2">
-          <span className="rounded-md bg-[#EEF3FF] border border-[#315CE8]/20 px-2.5 py-1 text-xs font-bold text-[#315CE8]">
-            Level {level.id}: {level.title}
+    <div
+      ref={containerRef}
+      tabIndex={0}
+      className="h-[100dvh] w-full flex flex-col justify-between bg-[#F5F7FA] text-[#192230] select-none outline-none overflow-hidden font-sans border-box"
+    >
+      {/* ---------------- 1. DISCREET MINIMAL TOP BAR ---------------- */}
+      <header className="w-full max-w-5xl mx-auto px-3 sm:px-6 pt-2.5 pb-2 flex items-center justify-between border-b border-[#E1E7EF] shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="rounded-lg bg-[#EEF3FF] border border-[#315CE8]/30 px-2.5 py-1 text-xs font-bold text-[#315CE8] flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-[#315CE8] animate-pulse"></span>
+            <span>Level {level.id}: {level.title}</span>
           </span>
-          {currentProgress.completed && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-[#16845B] border border-emerald-200">
-              <CheckCircle className="h-3 w-3" /> Passed
+
+          <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-[#647184] bg-white border border-[#E1E7EF] px-2 py-0.5 rounded-md">
+            {isFinalAssessment ? (
+              <>
+                <Trophy className="h-3 w-3 text-amber-500" />
+                <span>Final Assessment</span>
+              </>
+            ) : (
+              <>
+                <BookOpen className="h-3 w-3 text-[#315CE8]" />
+                <span>Part {activeExerciseIdx + 1} of {allExercises.length}</span>
+              </>
+            )}
+          </span>
+        </div>
+
+        {/* Live Metrics: Subtle, uncrowded */}
+        <div className="flex items-center gap-3 sm:gap-6 font-mono text-xs">
+          <div className="flex items-center gap-1">
+            <span className="text-[#8692A6] text-[10px] uppercase font-bold">WPM</span>
+            <span className="text-sm sm:text-base font-bold text-[#192230]">{liveWpm}</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <span className="text-[#8692A6] text-[10px] uppercase font-bold">ACC</span>
+            <span
+              className={`text-sm sm:text-base font-bold ${
+                liveAccuracy >= level.minAccuracy ? 'text-[#16845B]' : 'text-amber-600'
+              }`}
+            >
+              {liveAccuracy}%
             </span>
-          )}
-          <div className="flex items-center gap-1 ml-1">
-            <button
-              type="button"
-              disabled={!prevLevel}
-              onClick={() => prevLevel && onSelectLevel(prevLevel.id)}
-              aria-label="Previous level"
-              className="flex items-center gap-1 rounded-lg border border-[#E1E7EF] bg-white px-2 py-1 text-xs font-semibold text-[#647184] hover:text-[#192230] hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none transition-colors shadow-xs cursor-pointer"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Prev</span>
-            </button>
-            <button
-              type="button"
-              disabled={!nextLevel || !isNextLevelUnlocked}
-              onClick={() => nextLevel && isNextLevelUnlocked && onSelectLevel(nextLevel.id)}
-              aria-label="Next level"
-              className="flex items-center gap-1 rounded-lg border border-[#E1E7EF] bg-white px-2 py-1 text-xs font-semibold text-[#647184] hover:text-[#192230] hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none transition-colors shadow-xs cursor-pointer"
-            >
-              <span className="hidden sm:inline">Next</span>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <span className="text-[#8692A6] text-[10px] uppercase font-bold">TIME</span>
+            <span className="text-sm sm:text-base font-bold text-[#315CE8]">
+              {formatTime(remainingTime)}
+            </span>
           </div>
         </div>
 
-        {/* Practice Parts Tabs & Focus Mode Button */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {allExercises.map((ex, idx) => {
-            const isAssessment = idx === allExercises.length - 1;
-            const isActive = idx === activeExerciseIdx;
-
-            return (
-              <button
-                key={ex.id || idx}
-                type="button"
-                onClick={() => setActiveExerciseIdx(idx)}
-                className={`flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
-                  isActive
-                    ? isAssessment
-                      ? 'bg-amber-500 text-slate-950 shadow-xs'
-                      : 'bg-[#315CE8] text-white shadow-xs'
-                    : 'bg-[#F8FAFC] border border-[#E1E7EF] text-[#647184] hover:text-[#192230]'
-                }`}
-              >
-                {isAssessment ? (
-                  <>
-                    <Trophy className="h-3 w-3" />
-                    <span>Assessment</span>
-                  </>
-                ) : (
-                  <>
-                    <BookOpen className="h-3 w-3" />
-                    <span>Part {idx + 1}</span>
-                  </>
-                )}
-              </button>
-            );
-          })}
+        {/* Discreet Exit & Controls */}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={resetExercise}
+            title="Restart exercise"
+            className="p-1.5 rounded-lg border border-[#E1E7EF] bg-white text-[#647184] hover:text-[#192230] hover:bg-slate-50 transition-colors cursor-pointer"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
 
           <button
             type="button"
-            onClick={() => setIsFocusModeOpen(true)}
-            title="Enter Fullscreen Focus Mode"
-            className="flex items-center gap-1.5 rounded-xl bg-[#0F172A] px-3 py-1 text-xs font-bold text-white shadow-xs hover:bg-[#1E293B] transition-all cursor-pointer ml-1"
+            onClick={() => setSoundEnabled((prev) => !prev)}
+            title={soundEnabled ? 'Mute typing sounds' : 'Enable typing sounds'}
+            className="p-1.5 rounded-lg border border-[#E1E7EF] bg-white text-[#647184] hover:text-[#192230] hover:bg-slate-50 transition-colors cursor-pointer"
           >
-            <Maximize2 className="h-3.5 w-3.5 text-sky-400" />
-            <span>Focus Mode</span>
+            {soundEnabled ? (
+              <Volume2 className="h-3.5 w-3.5 text-[#16845B]" />
+            ) : (
+              <VolumeX className="h-3.5 w-3.5" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={onExit}
+            title="Exit Lesson (Esc)"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#E1E7EF] bg-white text-[#647184] hover:text-[#D64550] hover:border-rose-300 hover:bg-rose-50 text-xs font-semibold transition-colors cursor-pointer ml-1"
+          >
+            <X className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Esc</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* 1. TOP: Vector Hand-Placement Guide */}
-      <HandGuide activeChar={activeChar} />
+      {/* ---------------- 2. LARGE CLEAN TARGET TYPING TEXT (TOP AREA) ---------------- */}
+      <main className="flex-1 flex flex-col justify-center items-center px-4 sm:px-8 max-w-4xl mx-auto w-full overflow-hidden my-auto py-2">
+        <div
+          ref={textScrollRef}
+          className="w-full max-h-[140px] sm:max-h-[170px] overflow-y-auto no-scrollbar scroll-smooth flex flex-wrap items-center justify-center gap-x-0 leading-relaxed font-mono text-xl sm:text-2xl md:text-3xl text-center tracking-wide"
+        >
+          {targetChars.current.map((char, index) => {
+            const isTyped = index < currentIndex;
+            const isCurrent = index === currentIndex && !isCompleted;
+            const typedVal = typedChars[index];
+            const isCorrect = isTyped && typedVal === char;
+            const isWrong = isTyped && typedVal !== char;
 
-      {/* 2. CENTER: Prominent Target Typing Area with Live HUD */}
-      <TypingArea
-        key={`lesson-${level.id}-${activeExerciseIdx}`}
-        targetText={currentExercise.targetText}
-        isAssessment={isFinalAssessment}
-        minAccuracy={level.minAccuracy}
-        targetWpm={level.targetWpm}
-        timeLimitSeconds={level.timeLimitSeconds}
-        fontSize={settings.fontSize}
-        fontFamily={settings.fontFamily}
-        blindMode={settings.blindMode}
-        onCharacterTyped={handleCharacterTyped}
-        onComplete={handleComplete}
-      />
+            let charColor = 'text-[#8692A6]'; // default untyped
+            let bgClass = '';
 
-      {/* 3. BOTTOM: Clearly Visible Interactive Virtual Keyboard with Animated Hands */}
-      <div className="w-full pt-1">
-        <AnimatedKeyboardWithHands
-          activeChar={activeChar}
-          physicallyPressedKey={physicallyPressedKey}
-          showHands={true}
-          showFingerColors={true}
-          theme="light"
-        />
-      </div>
+            if (isCorrect) {
+              charColor = 'text-[#16845B] font-semibold';
+            } else if (isWrong) {
+              charColor = 'text-white bg-[#D64550] rounded-xs font-bold';
+            } else if (isCurrent) {
+              charColor = 'text-[#192230] font-bold';
+              bgClass = 'border-b-2 border-[#315CE8] animate-pulse';
+            }
 
-      {/* Fullscreen Immersive Focus Mode Session */}
-      {isFocusModeOpen && (
-        <FocusTypingSession
-          title={`Level ${level.id}: ${level.title}`}
-          subtitle={`Part ${activeExerciseIdx + 1} of ${allExercises.length} • Target: ${level.targetWpm} WPM`}
-          targetText={currentExercise.targetText}
-          targetWpm={level.targetWpm}
-          minAccuracy={level.minAccuracy}
-          isAssessment={isFinalAssessment}
-          soundEnabled={settings.soundEnabled}
-          onExit={() => setIsFocusModeOpen(false)}
-          onComplete={(res) => {
-            handleComplete(res);
-          }}
-          onNextLevel={() => {
-            setIsFocusModeOpen(false);
-            handleNextLevel();
-          }}
-          hasNextLevel={level.id < 100 && isNextLevelUnlocked}
-          nextLevelTitle={nextLevel?.title}
-        />
-      )}
+            return (
+              <span
+                key={index}
+                ref={isCurrent ? activeCharSpanRef : undefined}
+                className={`relative inline-block transition-colors duration-75 px-[1.5px] ${charColor} ${bgClass}`}
+              >
+                {char === ' ' ? '\u00A0' : char}
+                {isCurrent && (
+                  <span className="absolute -left-[1px] top-1 bottom-1 w-[2.5px] bg-[#315CE8] rounded-full animate-blink shadow-[0_0_6px_#315CE8]" />
+                )}
+              </span>
+            );
+          })}
+        </div>
 
-      {/* Completion Results Modal */}
+        {/* Subtle Next Key Guidance Hint */}
+        <div className="mt-3 flex items-center gap-2 text-xs text-[#647184]">
+          <span>Next key:</span>
+          <span className="px-2 py-0.5 rounded-md bg-white border border-[#E1E7EF] font-mono font-bold text-[#315CE8] shadow-2xs">
+            {activeChar === ' ' ? 'Spacebar' : activeChar || 'Complete'}
+          </span>
+          {activeFingerInfo && (
+            <>
+              <span className="text-[#CBD5E1]">•</span>
+              <span className="flex items-center gap-1.5 font-medium">
+                <span
+                  className="h-2 w-2 rounded-full inline-block"
+                  style={{ backgroundColor: activeFingerInfo.colorHex }}
+                />
+                <span>{activeFingerInfo.name}</span>
+              </span>
+            </>
+          )}
+        </div>
+      </main>
+
+      {/* ---------------- 3. VIRTUAL KEYBOARD WITH ANIMATED HANDS (BOTTOM AREA) ---------------- */}
+      <footer className="w-full max-w-4xl mx-auto px-2 sm:px-4 pb-3 sm:pb-5 shrink-0 flex justify-center">
+        <div className="w-full max-h-[44vh] flex items-center justify-center">
+          <AnimatedKeyboardWithHands
+            activeChar={activeChar}
+            physicallyPressedKey={physicallyPressedKey}
+            showHands={true}
+            showFingerColors={true}
+            theme="light"
+          />
+        </div>
+      </footer>
+
+      {/* ---------------- 4. COMPLETION RESULTS MODAL ---------------- */}
       <LevelCompletionModal
-        isOpen={isModalOpen}
+        isOpen={isResultModalOpen}
         levelId={level.id}
         levelTitle={level.title}
         isAssessment={isFinalAssessment}
@@ -326,9 +538,19 @@ export const LessonView: React.FC<LessonViewProps> = ({
         hasNextExercise={activeExerciseIdx < allExercises.length - 1}
         hasNextLevel={level.id < 100 && isNextLevelUnlocked}
         onNextExercise={handleNextExercise}
-        onNextLevel={handleNextLevel}
-        onRetry={handleRetry}
-        onClose={() => setIsModalOpen(false)}
+        onNextLevel={handleNextLevelClick}
+        onRetry={resetExercise}
+        onClose={() => {
+          setIsResultModalOpen(false);
+          onExit();
+        }}
+      />
+
+      {/* ---------------- 5. SPONSOR INTERSTITIAL (LINK 2) ---------------- */}
+      <SponsorInterstitial
+        isOpen={isInterstitialOpen}
+        nextChallengeTitle={nextLevel ? `Level ${nextLevel.id}: ${nextLevel.title}` : undefined}
+        onContinue={handleContinueAfterInterstitial}
       />
     </div>
   );

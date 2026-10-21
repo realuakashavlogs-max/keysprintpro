@@ -8,7 +8,6 @@ import { Trophy, Star, ArrowRight, RotateCcw, AlertTriangle, Zap, Target, Clock,
 import confetti from 'canvas-confetti';
 import { formatTime } from '../utils/typingLogic';
 import { TypingResult } from './TypingArea';
-import { AdBanner, SMARTLINK_URL } from './AdBanner';
 
 interface LevelCompletionModalProps {
   isOpen: boolean;
@@ -154,13 +153,8 @@ export const LevelCompletionModal: React.FC<LevelCompletionModalProps> = ({
           </div>
         </div>
 
-        {/* High-Converting 300x250 Monetization Banner */}
-        <div className="my-2 flex justify-center">
-          <AdBanner type="300x250" />
-        </div>
-
         {/* Action Buttons */}
-        <div className="mt-4 flex flex-col-reverse sm:flex-row items-center gap-2.5">
+        <div className="mt-6 flex flex-col-reverse sm:flex-row items-center gap-2.5">
           <button
             type="button"
             onClick={onRetry}
@@ -177,7 +171,7 @@ export const LevelCompletionModal: React.FC<LevelCompletionModalProps> = ({
                 onClick={onNextLevel}
                 className="w-full sm:w-1/2 flex items-center justify-center gap-2 rounded-xl bg-[#315CE8] px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#2546B8] transition-all cursor-pointer"
               >
-                <span>Next Level ({levelId + 1})</span>
+                <span>Next Challenge ({levelId + 1})</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
             ) : hasNextExercise ? (
@@ -208,19 +202,6 @@ export const LevelCompletionModal: React.FC<LevelCompletionModalProps> = ({
               <RotateCcw className="h-4 w-4" />
             </button>
           )}
-        </div>
-
-        {/* Sponsored Partner Speed Challenge Smartlink */}
-        <div className="mt-3 pt-3 border-t border-[#E1E7EF] text-center">
-          <a
-            href={SMARTLINK_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#315CE8] hover:text-[#2546B8] hover:underline"
-          >
-            <Zap className="h-3.5 w-3.5" />
-            <span>Bonus: Test Your Speed in Global Sponsored Arena →</span>
-          </a>
         </div>
       </div>
     </div>

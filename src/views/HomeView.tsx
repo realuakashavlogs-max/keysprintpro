@@ -16,8 +16,8 @@ import {
 } from 'lucide-react';
 import { ALL_LEVELS, getLevelById } from '../data/levels';
 import { LevelProgress, UserStats } from '../types/typing';
-import { AdBanner, SMARTLINK_URL } from '../components/AdBanner';
-import { NativeAd } from '../components/NativeAd';
+import { SPONSOR_URLS } from '../data/sponsors';
+import { ExternalLink } from 'lucide-react';
 
 interface HomeViewProps {
   levelsProgress: Record<number, LevelProgress>;
@@ -41,7 +41,39 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const isReturningUser = completedLevelsCount > 0 || activeLevelId > 1;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[78vh] py-8 px-4 max-w-4xl mx-auto">
+    <div className="flex flex-col items-center justify-center min-h-[78vh] py-6 px-4 max-w-4xl mx-auto">
+      {/* Homepage Sponsor — Link 1 (Compact, professional banner near top) */}
+      <div className="w-full mb-6 rounded-2xl border border-[#E1E7EF] bg-white p-3.5 sm:p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EEF3FF] text-[#315CE8] border border-[#315CE8]/20">
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <div className="text-left">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#315CE8]">
+                Featured Sponsor
+              </span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.2 text-[9px] font-semibold text-[#647184]">
+                Partner
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm font-semibold text-[#192230]">
+              Discover our featured digital entertainment & media showcase
+            </p>
+          </div>
+        </div>
+
+        <a
+          href={SPONSOR_URLS.homepage}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-[#315CE8] hover:bg-[#2546B8] px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors cursor-pointer"
+        >
+          <span>Visit Sponsor</span>
+          <ExternalLink className="h-3.5 w-3.5" />
+        </a>
+      </div>
+
       {/* Brand & Introduction */}
       <div className="text-center mb-8 sm:mb-10">
         <div className="inline-flex items-center gap-2 rounded-full border border-[#E1E7EF] bg-white px-3.5 py-1 text-xs font-semibold text-[#315CE8] shadow-xs mb-3">
@@ -177,8 +209,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
         )}
       </div>
 
-      {/* Sponsored Partner Challenge Card */}
-      <div className="mt-8 w-full rounded-2xl border border-[#315CE8]/20 bg-gradient-to-r from-[#EEF3FF] via-white to-teal-50 p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* Bottom Partner Exploration Card */}
+      <div className="mt-8 w-full rounded-2xl border border-[#E1E7EF] bg-gradient-to-r from-[#EEF3FF] via-white to-slate-50 p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#315CE8] text-white shadow-xs">
             <Sparkles className="h-5 w-5" />
@@ -186,34 +218,31 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[#315CE8]">
-                Sponsored Partner
+                Featured Partner
               </span>
-              <span className="rounded-full bg-[#16845B]/10 px-2 py-0.2 text-[10px] font-bold text-[#16845B]">
-                High Reward
+              <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.2 text-[10px] font-bold text-[#16845B]">
+                Verified
               </span>
             </div>
             <p className="text-sm font-bold text-[#192230]">
-              Global Typing Speed Challenge & Benchmark
+              KeySprint Recommended Partner Showcase
             </p>
             <p className="text-xs text-[#647184]">
-              Compete against top typists worldwide and claim your benchmark certificate.
+              Explore premier external digital media and partner channels.
             </p>
           </div>
         </div>
 
         <a
-          href={SMARTLINK_URL}
+          href={SPONSOR_URLS.homepage}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 flex items-center gap-2 rounded-xl bg-[#315CE8] hover:bg-[#2546B8] px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition-all"
+          className="shrink-0 flex items-center gap-2 rounded-xl bg-[#315CE8] hover:bg-[#2546B8] px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition-all cursor-pointer"
         >
-          <span>Join Challenge</span>
+          <span>Explore Partner</span>
           <ArrowRight className="h-4 w-4" />
         </a>
       </div>
-
-      {/* Native Ad Placement */}
-      <NativeAd className="mt-4" />
     </div>
   );
 };

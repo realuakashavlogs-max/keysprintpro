@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Gauge, Clock, Award, RotateCcw, Zap, Target, ArrowRight, Maximize2 } from 'lucide-react';
+import { Gauge, Clock, Award, RotateCcw, Zap, Target, ArrowRight, Maximize2, ExternalLink } from 'lucide-react';
 import { TypingArea, TypingResult } from '../components/TypingArea';
 import { AnimatedKeyboardWithHands } from '../components/AnimatedKeyboardWithHands';
 import { HandGuide } from '../components/HandGuide';
@@ -12,7 +12,7 @@ import { FocusTypingSession } from '../components/FocusTypingSession';
 import { recordPracticeSession } from '../utils/storage';
 import { UserSettings, UserStats } from '../types/typing';
 import { soundEngine } from '../utils/audio';
-import { AdBanner, SMARTLINK_URL } from '../components/AdBanner';
+import { SPONSOR_URLS } from '../data/sponsors';
 
 const SPEED_TEST_DURATIONS = [
   { label: '1 Minute', seconds: 60 },
@@ -45,6 +45,7 @@ export const SpeedTestView: React.FC<SpeedTestViewProps> = ({
   const [physicalKey, setPhysicalKey] = useState<string>('');
   const [testResult, setTestResult] = useState<TypingResult | null>(null);
   const [testKey, setTestKey] = useState<number>(0);
+  const [isFocusModeOpen, setIsFocusModeOpen] = useState<boolean>(false);
 
   useEffect(() => {
     setActiveChar(activePassage[0] || 'T');
@@ -103,8 +104,8 @@ export const SpeedTestView: React.FC<SpeedTestViewProps> = ({
           </p>
         </div>
 
-        {/* 1, 3, 5 Minute Controls */}
-        <div className="flex items-center gap-1.5 rounded-2xl border border-[#E1E7EF] bg-[#F8FAFC] p-1.5">
+        {/* 1, 3, 5 Minute Controls + Focus Mode Button */}
+        <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-[#E1E7EF] bg-[#F8FAFC] p-1.5">
           {SPEED_TEST_DURATIONS.map((d) => (
             <button
               key={d.seconds}
@@ -113,7 +114,7 @@ export const SpeedTestView: React.FC<SpeedTestViewProps> = ({
                 setSelectedDuration(d.seconds);
                 handleRestart();
               }}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                 selectedDuration === d.seconds
                   ? 'bg-[#117C78] text-white shadow-xs'
                   : 'text-[#647184] hover:text-[#192230]'
@@ -122,6 +123,16 @@ export const SpeedTestView: React.FC<SpeedTestViewProps> = ({
               {d.label}
             </button>
           ))}
+
+          <button
+            type="button"
+            onClick={() => setIsFocusModeOpen(true)}
+            title="Start Fullscreen Focus Mode"
+            className="flex items-center gap-1.5 rounded-xl bg-[#0F172A] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#1E293B] transition-all cursor-pointer ml-1"
+          >
+            <Maximize2 className="h-3.5 w-3.5 text-teal-400" />
+            <span>Focus Mode</span>
+          </button>
         </div>
       </div>
 
@@ -163,16 +174,41 @@ export const SpeedTestView: React.FC<SpeedTestViewProps> = ({
               </div>
             </div>
 
-            {/* High-Converting 300x250 Monetization Banner */}
-            <div className="my-3 flex justify-center">
-              <AdBanner type="300x250" />
+            {/* Sponsored Recommendation Card using Link 3 */}
+            <div className="w-full max-w-xl my-4 rounded-2xl border border-[#E1E7EF] bg-gradient-to-br from-[#F8FAFC] to-[#EEF3FF]/50 p-4 text-left shadow-xs">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#315CE8]">
+                  Sponsored Recommendation
+                </span>
+                <span className="text-[10px] font-medium text-[#8692A6]">
+                  External Partner
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-[#192230]">
+                Curated Digital Marketplace & Partner Hub
+              </h4>
+              <p className="text-xs text-[#647184] mt-0.5 leading-relaxed">
+                Check out exclusive marketplace auctions, digital partner opportunities, and trending specials.
+              </p>
+              <div className="mt-3 pt-2.5 border-t border-[#E1E7EF] flex items-center justify-between">
+                <span className="text-[11px] font-mono text-[#8692A6]">auctionr.org</span>
+                <a
+                  href={SPONSOR_URLS.speedTestResult}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#315CE8] hover:bg-[#2546B8] px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors cursor-pointer"
+                >
+                  <span>Visit Sponsor</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
               <button
                 type="button"
                 onClick={handleRestart}
-                className="flex items-center gap-2 rounded-xl bg-[#117C78] px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#0E6461] transition-all"
+                className="flex items-center gap-2 rounded-xl bg-[#117C78] px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#0E6461] transition-all cursor-pointer"
               >
                 <RotateCcw className="h-4 w-4" />
                 <span>Test Again</span>
@@ -180,19 +216,10 @@ export const SpeedTestView: React.FC<SpeedTestViewProps> = ({
               <button
                 type="button"
                 onClick={handleChangePassage}
-                className="flex items-center gap-2 rounded-xl border border-[#E1E7EF] bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#192230] hover:bg-slate-50 transition-all shadow-xs"
+                className="flex items-center gap-2 rounded-xl border border-[#E1E7EF] bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#192230] hover:bg-slate-50 transition-all shadow-xs cursor-pointer"
               >
                 <span>New Passage</span>
               </button>
-              <a
-                href={SMARTLINK_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl bg-[#315CE8] px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#2546B8] transition-all"
-              >
-                <Zap className="h-4 w-4" />
-                <span>Sponsored Speed Challenge →</span>
-              </a>
             </div>
           </div>
         </div>

@@ -24,6 +24,7 @@ import { AnimatedKeyboardWithHands } from './AnimatedKeyboardWithHands';
 import { calculateWpm, calculateAccuracy, calculateCpm, formatTime, assessLevelPassed } from '../utils/typingLogic';
 import { soundEngine } from '../utils/audio';
 import { TypingResult } from './TypingArea';
+import { SponsorInterstitial } from './SponsorInterstitial';
 
 interface FocusTypingSessionProps {
   title: string;
@@ -68,6 +69,7 @@ export const FocusTypingSession: React.FC<FocusTypingSessionProps> = ({
   const [finalResult, setFinalResult] = useState<TypingResult | null>(null);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [showHands, setShowHands] = useState<boolean>(true);
+  const [isInterstitialOpen, setIsInterstitialOpen] = useState<boolean>(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const textScrollRef = useRef<HTMLDivElement>(null);
@@ -494,7 +496,7 @@ export const FocusTypingSession: React.FC<FocusTypingSessionProps> = ({
               {hasNextLevel && onNextLevel ? (
                 <button
                   type="button"
-                  onClick={onNextLevel}
+                  onClick={() => setIsInterstitialOpen(true)}
                   className="w-full sm:w-1/2 flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-3 text-sm font-bold text-white shadow-lg transition-colors cursor-pointer"
                 >
                   <span>Next Challenge</span>
@@ -513,6 +515,16 @@ export const FocusTypingSession: React.FC<FocusTypingSessionProps> = ({
           </div>
         </div>
       )}
+
+      {/* Sponsor Interstitial (Link 2) */}
+      <SponsorInterstitial
+        isOpen={isInterstitialOpen}
+        nextChallengeTitle={nextLevelTitle}
+        onContinue={() => {
+          setIsInterstitialOpen(false);
+          if (onNextLevel) onNextLevel();
+        }}
+      />
     </div>
   );
 };

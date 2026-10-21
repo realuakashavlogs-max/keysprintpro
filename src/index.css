@@ -16,11 +16,29 @@
     --color-disabled: #A0A9B6;
   }
 
+  html, body {
+    overflow-x: hidden;
+    overflow-y: auto;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
   body {
     background-color: #F5F7FA;
     color: #192230;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Hide scrollbars for clean focus text */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

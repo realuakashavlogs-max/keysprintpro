@@ -8,8 +8,6 @@ import { Lock, CheckCircle, Star, Search, Play, Trophy, Sparkles } from 'lucide-
 import { ALL_LEVELS } from '../data/levels';
 import { STAGES } from '../data/stages';
 import { LevelProgress } from '../types/typing';
-import { NativeAd } from '../components/NativeAd';
-import { ResponsiveAdLeaderboard } from '../components/AdBanner';
 
 interface AllLevelsViewProps {
   levelsProgress: Record<number, LevelProgress>;
@@ -119,8 +117,6 @@ export const AllLevelsView: React.FC<AllLevelsViewProps> = ({
         </div>
       </div>
 
-      {/* Native Sponsored Banner */}
-      <NativeAd />
 
       {/* 100 Levels Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
