@@ -4,20 +4,26 @@
  */
 
 import React from 'react';
-import { getFingerForKey, getFingerInstruction, getShiftHand, requiresShift, FINGER_DATA } from '../data/fingerMapping';
+import {
+  getFingerForKey,
+  getFingerInstruction,
+  getShiftHand,
+  requiresShift,
+} from '../data/fingerMapping';
 import { FingerId } from '../types/typing';
 
 interface HandGuideProps {
   activeChar: string;
+  compact?: boolean;
 }
 
-export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
+export const HandGuide: React.FC<HandGuideProps> = ({ activeChar, compact = false }) => {
   const activeFinger = activeChar ? getFingerForKey(activeChar) : null;
   const isShift = requiresShift(activeChar);
   const shiftHand = getShiftHand(activeChar);
   const info = getFingerInstruction(activeChar);
 
-  // Finger definitions for Left and Right hands
+  // Finger definitions for Left and Right hands with home keys
   const leftFingers: { id: FingerId; name: string; key: string }[] = [
     { id: 'left-pinky', name: 'Pinky', key: 'A' },
     { id: 'left-ring', name: 'Ring', key: 'S' },
@@ -35,9 +41,9 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
   ];
 
   return (
-    <div className="w-full rounded-2xl border border-[#E1E7EF] bg-white p-4 sm:p-5 shadow-xs">
-      {/* Dynamic Instruction Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3.5 mb-4 border-b border-[#E1E7EF]">
+    <div className="w-full rounded-2xl border border-[#E1E7EF] bg-white p-3.5 sm:p-5 shadow-xs select-none">
+      {/* 1. Dynamic Hand & Finger Instruction Banner */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 mb-3.5 border-b border-[#E1E7EF]">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF3FF] border border-[#315CE8]/20 text-[#315CE8] font-mono text-lg font-bold shadow-xs">
             {activeChar === ' ' ? '␣' : activeChar || 'F'}
@@ -65,13 +71,13 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
         </div>
       </div>
 
-      {/* Two Hands Anatomical Vector Illustration */}
+      {/* 2. Real Human Hands Cards (Left & Right) with Real Skin Texture & Synchronized Finger Highlighting */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-        {/* Left Hand Card */}
-        <div className="relative flex flex-col items-center rounded-xl bg-[#F8FAFC] border border-[#E1E7EF] p-4">
+        {/* ================= LEFT HAND CARD ================= */}
+        <div className="relative flex flex-col items-center rounded-xl bg-[#F8FAFC] border border-[#E1E7EF] p-3 sm:p-4">
           <div className="w-full flex items-center justify-between mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-[#647184]">
-              Left Hand
+              Left Hand (ASDF)
             </span>
             {isShift && shiftHand === 'left' ? (
               <span className="rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-800 animate-pulse">
@@ -82,56 +88,71 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
             )}
           </div>
 
-          {/* Left Hand SVG Diagram */}
-          <div className="relative w-full max-w-[280px] h-[190px]">
+          {/* Real Human Left Hand Photographic Asset + SVG Interactive Finger Mask */}
+          <div className="relative w-full max-w-[280px] h-[210px] sm:h-[220px] flex items-center justify-center overflow-hidden">
+            {/* Real Photographic Human Hand */}
+            <img
+              src="/hands/left_hand.png"
+              alt="Real Human Left Hand Touch Typing Posture"
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none drop-shadow-sm select-none"
+              loading="eager"
+            />
+
+            {/* Synchronized Finger Highlighting SVG Overlay on 1024x1024 coordinate system */}
             <svg
-              viewBox="0 0 280 200"
-              className="w-full h-full drop-shadow-xs"
-              fill="none"
+              viewBox="0 0 1024 1024"
+              className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
               xmlns="http://www.w3.org/2000/svg"
             >
-              {/* Palm / Hand Base */}
-              <path
-                d="M45 195 C45 130 50 105 75 95 C100 88 175 88 195 105 C215 125 210 160 215 195 Z"
-                fill="#EDF2F7"
-                stroke="#CBD5E1"
-                strokeWidth="2"
-              />
-              {/* Wrist lines */}
-              <path d="M70 195 C100 190 160 190 190 195" stroke="#CBD5E1" strokeWidth="2" strokeDasharray="3 3" />
+              <defs>
+                <filter id="leftGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="10" floodColor="#315CE8" floodOpacity="0.8" />
+                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#60A5FA" floodOpacity="0.9" />
+                </filter>
+                <filter id="shiftGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="10" floodColor="#F59E0B" floodOpacity="0.8" />
+                </filter>
+              </defs>
 
-              {/* Left Pinky (Finger 1) - Key A */}
+              {/* 1. Left Pinky (Finger 1) - Key A or ShiftLeft */}
               {(() => {
                 const isTarget = activeFinger?.id === 'left-pinky';
                 const isHoldShift = isShift && shiftHand === 'left';
-                const fill = isHoldShift ? '#FEF3C7' : isTarget ? '#EEF3FF' : '#FFFFFF';
-                const stroke = isHoldShift ? '#F59E0B' : isTarget ? '#315CE8' : '#CBD5E1';
-                const strokeW = isTarget || isHoldShift ? '2.5' : '1.5';
+                const isActive = isTarget || isHoldShift;
+                const strokeColor = isHoldShift ? '#F59E0B' : '#315CE8';
+                const filter = isHoldShift ? 'url(#shiftGlow)' : 'url(#leftGlow)';
+
                 return (
                   <g className="transition-all duration-150">
-                    <rect
-                      x="35"
-                      y="70"
-                      width="26"
-                      height="80"
-                      rx="13"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeW}
+                    {/* Finger Highlight Contour */}
+                    {isActive && (
+                      <path
+                        d="M 276 340 C 276 270 285 253 308 253 C 330 253 340 270 340 340 L 342 450 C 342 475 276 475 276 450 Z"
+                        fill="rgba(49, 92, 232, 0.22)"
+                        stroke={strokeColor}
+                        strokeWidth="5"
+                        strokeLinejoin="round"
+                        filter={filter}
+                      />
+                    )}
+                    {/* Fingertip Key Badge */}
+                    <circle
+                      cx="308"
+                      cy="285"
+                      r={isActive ? "28" : "20"}
+                      fill={isActive ? strokeColor : "#FFFFFF"}
+                      stroke={isActive ? "#FFFFFF" : "#CBD5E1"}
+                      strokeWidth={isActive ? "3" : "2"}
+                      className={isActive ? "animate-pulse" : ""}
                     />
-                    {/* Knuckle joint */}
-                    <line x1="41" y1="105" x2="55" y2="105" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <line x1="42" y1="125" x2="54" y2="125" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    {/* Key badge */}
-                    <circle cx="48" cy="85" r="9" fill={isTarget ? '#315CE8' : isHoldShift ? '#F59E0B' : '#F1F5F9'} />
                     <text
-                      x="48"
-                      y="89"
+                      x="308"
+                      y="292"
                       textAnchor="middle"
-                      fill={isTarget || isHoldShift ? '#FFFFFF' : '#475569'}
-                      fontSize="10"
+                      fill={isActive ? "#FFFFFF" : "#475569"}
+                      fontSize={isActive ? "22" : "16"}
                       fontWeight="bold"
-                      fontFamily="monospace"
+                      fontFamily="ui-monospace, monospace"
                     >
                       {isHoldShift ? '⇧' : 'A'}
                     </text>
@@ -139,35 +160,39 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
                 );
               })()}
 
-              {/* Left Ring (Finger 2) - Key S */}
+              {/* 2. Left Ring (Finger 2) - Key S */}
               {(() => {
                 const isTarget = activeFinger?.id === 'left-ring';
-                const fill = isTarget ? '#EEF3FF' : '#FFFFFF';
-                const stroke = isTarget ? '#315CE8' : '#CBD5E1';
-                const strokeW = isTarget ? '2.5' : '1.5';
+
                 return (
                   <g className="transition-all duration-150">
-                    <rect
-                      x="68"
-                      y="35"
-                      width="28"
-                      height="110"
-                      rx="14"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeW}
+                    {isTarget && (
+                      <path
+                        d="M 368 250 C 368 170 378 149 404 149 C 430 149 440 170 440 250 L 442 410 C 442 435 368 435 368 410 Z"
+                        fill="rgba(49, 92, 232, 0.22)"
+                        stroke="#315CE8"
+                        strokeWidth="5"
+                        strokeLinejoin="round"
+                        filter="url(#leftGlow)"
+                      />
+                    )}
+                    <circle
+                      cx="404"
+                      cy="185"
+                      r={isTarget ? "28" : "20"}
+                      fill={isTarget ? "#315CE8" : "#FFFFFF"}
+                      stroke={isTarget ? "#FFFFFF" : "#CBD5E1"}
+                      strokeWidth={isTarget ? "3" : "2"}
+                      className={isTarget ? "animate-pulse" : ""}
                     />
-                    <line x1="75" y1="75" x2="89" y2="75" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <line x1="75" y1="105" x2="89" y2="105" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <circle cx="82" cy="52" r="9" fill={isTarget ? '#315CE8' : '#F1F5F9'} />
                     <text
-                      x="82"
-                      y="56"
+                      x="404"
+                      y="192"
                       textAnchor="middle"
-                      fill={isTarget ? '#FFFFFF' : '#475569'}
-                      fontSize="10"
+                      fill={isTarget ? "#FFFFFF" : "#475569"}
+                      fontSize={isTarget ? "22" : "16"}
                       fontWeight="bold"
-                      fontFamily="monospace"
+                      fontFamily="ui-monospace, monospace"
                     >
                       S
                     </text>
@@ -175,35 +200,39 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
                 );
               })()}
 
-              {/* Left Middle (Finger 3) - Key D */}
+              {/* 3. Left Middle (Finger 3) - Key D */}
               {(() => {
                 const isTarget = activeFinger?.id === 'left-middle';
-                const fill = isTarget ? '#EEF3FF' : '#FFFFFF';
-                const stroke = isTarget ? '#315CE8' : '#CBD5E1';
-                const strokeW = isTarget ? '2.5' : '1.5';
+
                 return (
                   <g className="transition-all duration-150">
-                    <rect
-                      x="103"
-                      y="20"
-                      width="28"
-                      height="125"
-                      rx="14"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeW}
+                    {isTarget && (
+                      <path
+                        d="M 452 220 C 452 130 464 104 490 104 C 516 104 528 130 528 220 L 530 405 C 530 430 452 430 452 405 Z"
+                        fill="rgba(49, 92, 232, 0.22)"
+                        stroke="#315CE8"
+                        strokeWidth="5"
+                        strokeLinejoin="round"
+                        filter="url(#leftGlow)"
+                      />
+                    )}
+                    <circle
+                      cx="490"
+                      cy="145"
+                      r={isTarget ? "28" : "20"}
+                      fill={isTarget ? "#315CE8" : "#FFFFFF"}
+                      stroke={isTarget ? "#FFFFFF" : "#CBD5E1"}
+                      strokeWidth={isTarget ? "3" : "2"}
+                      className={isTarget ? "animate-pulse" : ""}
                     />
-                    <line x1="110" y1="65" x2="124" y2="65" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <line x1="110" y1="95" x2="124" y2="95" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <circle cx="117" cy="37" r="9" fill={isTarget ? '#315CE8' : '#F1F5F9'} />
                     <text
-                      x="117"
-                      y="41"
+                      x="490"
+                      y="152"
                       textAnchor="middle"
-                      fill={isTarget ? '#FFFFFF' : '#475569'}
-                      fontSize="10"
+                      fill={isTarget ? "#FFFFFF" : "#475569"}
+                      fontSize={isTarget ? "22" : "16"}
                       fontWeight="bold"
-                      fontFamily="monospace"
+                      fontFamily="ui-monospace, monospace"
                     >
                       D
                     </text>
@@ -211,66 +240,87 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
                 );
               })()}
 
-              {/* Left Index (Finger 4) - Key F with tactile raised bump! */}
+              {/* 4. Left Index (Finger 4) - Key F with tactile bump indicator! */}
               {(() => {
                 const isTarget = activeFinger?.id === 'left-index';
-                const fill = isTarget ? '#EEF3FF' : '#FFFFFF';
-                const stroke = isTarget ? '#315CE8' : '#CBD5E1';
-                const strokeW = isTarget ? '2.5' : '1.5';
+
                 return (
                   <g className="transition-all duration-150">
-                    <rect
-                      x="138"
-                      y="35"
-                      width="28"
-                      height="110"
-                      rx="14"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeW}
+                    {isTarget && (
+                      <path
+                        d="M 560 250 C 560 170 572 146 598 146 C 624 146 636 170 636 250 L 638 420 C 638 445 560 445 560 420 Z"
+                        fill="rgba(49, 92, 232, 0.22)"
+                        stroke="#315CE8"
+                        strokeWidth="5"
+                        strokeLinejoin="round"
+                        filter="url(#leftGlow)"
+                      />
+                    )}
+                    <circle
+                      cx="598"
+                      cy="185"
+                      r={isTarget ? "28" : "20"}
+                      fill={isTarget ? "#315CE8" : "#FFFFFF"}
+                      stroke={isTarget ? "#FFFFFF" : "#CBD5E1"}
+                      strokeWidth={isTarget ? "3" : "2"}
+                      className={isTarget ? "animate-pulse" : ""}
                     />
-                    <line x1="145" y1="75" x2="159" y2="75" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <line x1="145" y1="105" x2="159" y2="105" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    {/* Key badge */}
-                    <circle cx="152" cy="52" r="9" fill={isTarget ? '#315CE8' : '#F1F5F9'} />
                     <text
-                      x="152"
-                      y="56"
+                      x="598"
+                      y="192"
                       textAnchor="middle"
-                      fill={isTarget ? '#FFFFFF' : '#475569'}
-                      fontSize="10"
+                      fill={isTarget ? "#FFFFFF" : "#475569"}
+                      fontSize={isTarget ? "22" : "16"}
                       fontWeight="bold"
-                      fontFamily="monospace"
+                      fontFamily="ui-monospace, monospace"
                     >
                       F
                     </text>
-                    {/* Tactile bump marker below key badge */}
-                    <line x1="148" y1="64" x2="156" y2="64" stroke="#315CE8" strokeWidth="2" strokeLinecap="round" />
+                    {/* Tactile home bump marker line */}
+                    <line
+                      x1="586"
+                      y1="222"
+                      x2="610"
+                      y2="222"
+                      stroke={isTarget ? "#315CE8" : "#8692A6"}
+                      strokeWidth="3.5"
+                      strokeLinecap="round"
+                    />
                   </g>
                 );
               })()}
 
-              {/* Left Thumb (Finger 5) - Spacebar */}
+              {/* 5. Left Thumb (Finger 5) - Spacebar */}
               {(() => {
                 const isTarget = activeFinger?.id === 'thumb';
-                const fill = isTarget ? '#EEF3FF' : '#FFFFFF';
-                const stroke = isTarget ? '#315CE8' : '#CBD5E1';
-                const strokeW = isTarget ? '2.5' : '1.5';
+
                 return (
                   <g className="transition-all duration-150">
-                    <path
-                      d="M178 120 C195 110 230 115 235 135 C238 150 215 165 195 160 Z"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeW}
+                    {isTarget && (
+                      <path
+                        d="M 660 430 C 660 360 680 343 715 343 C 748 343 765 365 760 440 L 730 520 C 700 540 660 500 660 430 Z"
+                        fill="rgba(49, 92, 232, 0.22)"
+                        stroke="#315CE8"
+                        strokeWidth="5"
+                        strokeLinejoin="round"
+                        filter="url(#leftGlow)"
+                      />
+                    )}
+                    <circle
+                      cx="715"
+                      cy="380"
+                      r={isTarget ? "28" : "20"}
+                      fill={isTarget ? "#315CE8" : "#FFFFFF"}
+                      stroke={isTarget ? "#FFFFFF" : "#CBD5E1"}
+                      strokeWidth={isTarget ? "3" : "2"}
+                      className={isTarget ? "animate-pulse" : ""}
                     />
-                    <circle cx="212" cy="135" r="9" fill={isTarget ? '#315CE8' : '#F1F5F9'} />
                     <text
-                      x="212"
-                      y="139"
+                      x="715"
+                      y="388"
                       textAnchor="middle"
-                      fill={isTarget ? '#FFFFFF' : '#475569'}
-                      fontSize="9"
+                      fill={isTarget ? "#FFFFFF" : "#475569"}
+                      fontSize={isTarget ? "20" : "15"}
                       fontWeight="bold"
                       fontFamily="sans-serif"
                     >
@@ -282,7 +332,7 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
             </svg>
           </div>
 
-          {/* Left Hand Finger List Chips */}
+          {/* Left Hand Finger Chips */}
           <div className="w-full flex items-center justify-between gap-1 pt-2 border-t border-[#E1E7EF] text-[11px]">
             {leftFingers.map((f) => {
               const isTarget = activeFinger?.id === f.id;
@@ -292,7 +342,7 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
                   key={f.id}
                   className={`flex flex-col items-center px-1.5 py-0.5 rounded-md transition-colors ${
                     isTarget
-                      ? 'bg-[#315CE8] text-white font-bold shadow-xs'
+                      ? 'bg-[#315CE8] text-white font-bold shadow-xs ring-1 ring-[#315CE8]'
                       : isHoldShift
                       ? 'bg-amber-100 text-amber-800 font-bold border border-amber-300'
                       : 'text-[#647184]'
@@ -306,11 +356,11 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
           </div>
         </div>
 
-        {/* Right Hand Card */}
-        <div className="relative flex flex-col items-center rounded-xl bg-[#F8FAFC] border border-[#E1E7EF] p-4">
+        {/* ================= RIGHT HAND CARD ================= */}
+        <div className="relative flex flex-col items-center rounded-xl bg-[#F8FAFC] border border-[#E1E7EF] p-3 sm:p-4">
           <div className="w-full flex items-center justify-between mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-[#647184]">
-              Right Hand
+              Right Hand (JKL;)
             </span>
             {isShift && shiftHand === 'right' ? (
               <span className="rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-800 animate-pulse">
@@ -321,44 +371,63 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
             )}
           </div>
 
-          {/* Right Hand SVG Diagram */}
-          <div className="relative w-full max-w-[280px] h-[190px]">
+          {/* Real Human Right Hand Photographic Asset + SVG Interactive Finger Mask */}
+          <div className="relative w-full max-w-[280px] h-[210px] sm:h-[220px] flex items-center justify-center overflow-hidden">
+            {/* Real Photographic Human Hand */}
+            <img
+              src="/hands/right_hand.png"
+              alt="Real Human Right Hand Touch Typing Posture"
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none drop-shadow-sm select-none"
+              loading="eager"
+            />
+
+            {/* Synchronized Finger Highlighting SVG Overlay on 1024x1024 coordinate system */}
             <svg
-              viewBox="0 0 280 200"
-              className="w-full h-full drop-shadow-xs"
-              fill="none"
+              viewBox="0 0 1024 1024"
+              className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
               xmlns="http://www.w3.org/2000/svg"
             >
-              {/* Palm / Hand Base */}
-              <path
-                d="M65 195 C70 160 65 125 85 105 C105 88 180 88 205 95 C230 105 235 130 235 195 Z"
-                fill="#EDF2F7"
-                stroke="#CBD5E1"
-                strokeWidth="2"
-              />
-              <path d="M90 195 C120 190 180 190 210 195" stroke="#CBD5E1" strokeWidth="2" strokeDasharray="3 3" />
+              <defs>
+                <filter id="rightGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="10" floodColor="#117C78" floodOpacity="0.8" />
+                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#2DD4BF" floodOpacity="0.9" />
+                </filter>
+                <filter id="rightShiftGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="10" floodColor="#F59E0B" floodOpacity="0.8" />
+                </filter>
+              </defs>
 
-              {/* Right Thumb (Finger 6) - Spacebar */}
+              {/* 6. Right Thumb (Finger 6) - Spacebar */}
               {(() => {
                 const isTarget = activeFinger?.id === 'thumb';
-                const fill = isTarget ? '#EEF3FF' : '#FFFFFF';
-                const stroke = isTarget ? '#315CE8' : '#CBD5E1';
-                const strokeW = isTarget ? '2.5' : '1.5';
+
                 return (
                   <g className="transition-all duration-150">
-                    <path
-                      d="M102 120 C85 110 50 115 45 135 C42 150 65 165 85 160 Z"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeW}
+                    {isTarget && (
+                      <path
+                        d="M 364 430 C 364 360 344 343 309 343 C 276 343 259 365 264 440 L 294 520 C 324 540 364 500 364 430 Z"
+                        fill="rgba(17, 124, 120, 0.22)"
+                        stroke="#117C78"
+                        strokeWidth="5"
+                        strokeLinejoin="round"
+                        filter="url(#rightGlow)"
+                      />
+                    )}
+                    <circle
+                      cx="309"
+                      cy="380"
+                      r={isTarget ? "28" : "20"}
+                      fill={isTarget ? "#117C78" : "#FFFFFF"}
+                      stroke={isTarget ? "#FFFFFF" : "#CBD5E1"}
+                      strokeWidth={isTarget ? "3" : "2"}
+                      className={isTarget ? "animate-pulse" : ""}
                     />
-                    <circle cx="68" cy="135" r="9" fill={isTarget ? '#315CE8' : '#F1F5F9'} />
                     <text
-                      x="68"
-                      y="139"
+                      x="309"
+                      y="388"
                       textAnchor="middle"
-                      fill={isTarget ? '#FFFFFF' : '#475569'}
-                      fontSize="9"
+                      fill={isTarget ? "#FFFFFF" : "#475569"}
+                      fontSize={isTarget ? "20" : "15"}
                       fontWeight="bold"
                       fontFamily="sans-serif"
                     >
@@ -368,74 +437,89 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
                 );
               })()}
 
-              {/* Right Index (Finger 7) - Key J with tactile raised bump! */}
+              {/* 7. Right Index (Finger 7) - Key J with tactile bump indicator! */}
               {(() => {
                 const isTarget = activeFinger?.id === 'right-index';
-                const fill = isTarget ? '#EEF3FF' : '#FFFFFF';
-                const stroke = isTarget ? '#315CE8' : '#CBD5E1';
-                const strokeW = isTarget ? '2.5' : '1.5';
+
                 return (
                   <g className="transition-all duration-150">
-                    <rect
-                      x="114"
-                      y="35"
-                      width="28"
-                      height="110"
-                      rx="14"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeW}
+                    {isTarget && (
+                      <path
+                        d="M 464 250 C 464 170 452 146 426 146 C 400 146 388 170 388 250 L 386 420 C 386 445 464 445 464 420 Z"
+                        fill="rgba(17, 124, 120, 0.22)"
+                        stroke="#117C78"
+                        strokeWidth="5"
+                        strokeLinejoin="round"
+                        filter="url(#rightGlow)"
+                      />
+                    )}
+                    <circle
+                      cx="426"
+                      cy="185"
+                      r={isTarget ? "28" : "20"}
+                      fill={isTarget ? "#117C78" : "#FFFFFF"}
+                      stroke={isTarget ? "#FFFFFF" : "#CBD5E1"}
+                      strokeWidth={isTarget ? "3" : "2"}
+                      className={isTarget ? "animate-pulse" : ""}
                     />
-                    <line x1="121" y1="75" x2="135" y2="75" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <line x1="121" y1="105" x2="135" y2="105" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    {/* Key badge */}
-                    <circle cx="128" cy="52" r="9" fill={isTarget ? '#315CE8' : '#F1F5F9'} />
                     <text
-                      x="128"
-                      y="56"
+                      x="426"
+                      y="192"
                       textAnchor="middle"
-                      fill={isTarget ? '#FFFFFF' : '#475569'}
-                      fontSize="10"
+                      fill={isTarget ? "#FFFFFF" : "#475569"}
+                      fontSize={isTarget ? "22" : "16"}
                       fontWeight="bold"
-                      fontFamily="monospace"
+                      fontFamily="ui-monospace, monospace"
                     >
                       J
                     </text>
-                    {/* Tactile bump marker below key badge */}
-                    <line x1="124" y1="64" x2="132" y2="64" stroke="#315CE8" strokeWidth="2" strokeLinecap="round" />
+                    {/* Tactile home bump marker line */}
+                    <line
+                      x1="414"
+                      y1="222"
+                      x2="438"
+                      y2="222"
+                      stroke={isTarget ? "#117C78" : "#8692A6"}
+                      strokeWidth="3.5"
+                      strokeLinecap="round"
+                    />
                   </g>
                 );
               })()}
 
-              {/* Right Middle (Finger 8) - Key K */}
+              {/* 8. Right Middle (Finger 8) - Key K */}
               {(() => {
                 const isTarget = activeFinger?.id === 'right-middle';
-                const fill = isTarget ? '#EEF3FF' : '#FFFFFF';
-                const stroke = isTarget ? '#315CE8' : '#CBD5E1';
-                const strokeW = isTarget ? '2.5' : '1.5';
+
                 return (
                   <g className="transition-all duration-150">
-                    <rect
-                      x="149"
-                      y="20"
-                      width="28"
-                      height="125"
-                      rx="14"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeW}
+                    {isTarget && (
+                      <path
+                        d="M 572 220 C 572 130 560 104 534 104 C 508 104 496 130 496 220 L 494 405 C 494 430 572 430 572 405 Z"
+                        fill="rgba(17, 124, 120, 0.22)"
+                        stroke="#117C78"
+                        strokeWidth="5"
+                        strokeLinejoin="round"
+                        filter="url(#rightGlow)"
+                      />
+                    )}
+                    <circle
+                      cx="534"
+                      cy="145"
+                      r={isTarget ? "28" : "20"}
+                      fill={isTarget ? "#117C78" : "#FFFFFF"}
+                      stroke={isTarget ? "#FFFFFF" : "#CBD5E1"}
+                      strokeWidth={isTarget ? "3" : "2"}
+                      className={isTarget ? "animate-pulse" : ""}
                     />
-                    <line x1="156" y1="65" x2="170" y2="65" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <line x1="156" y1="95" x2="170" y2="95" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <circle cx="163" cy="37" r="9" fill={isTarget ? '#315CE8' : '#F1F5F9'} />
                     <text
-                      x="163"
-                      y="41"
+                      x="534"
+                      y="152"
                       textAnchor="middle"
-                      fill={isTarget ? '#FFFFFF' : '#475569'}
-                      fontSize="10"
+                      fill={isTarget ? "#FFFFFF" : "#475569"}
+                      fontSize={isTarget ? "22" : "16"}
                       fontWeight="bold"
-                      fontFamily="monospace"
+                      fontFamily="ui-monospace, monospace"
                     >
                       K
                     </text>
@@ -443,35 +527,39 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
                 );
               })()}
 
-              {/* Right Ring (Finger 9) - Key L */}
+              {/* 9. Right Ring (Finger 9) - Key L */}
               {(() => {
                 const isTarget = activeFinger?.id === 'right-ring';
-                const fill = isTarget ? '#EEF3FF' : '#FFFFFF';
-                const stroke = isTarget ? '#315CE8' : '#CBD5E1';
-                const strokeW = isTarget ? '2.5' : '1.5';
+
                 return (
                   <g className="transition-all duration-150">
-                    <rect
-                      x="184"
-                      y="35"
-                      width="28"
-                      height="110"
-                      rx="14"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeW}
+                    {isTarget && (
+                      <path
+                        d="M 656 250 C 656 170 646 149 620 149 C 594 149 584 170 584 250 L 582 410 C 582 435 656 435 656 410 Z"
+                        fill="rgba(17, 124, 120, 0.22)"
+                        stroke="#117C78"
+                        strokeWidth="5"
+                        strokeLinejoin="round"
+                        filter="url(#rightGlow)"
+                      />
+                    )}
+                    <circle
+                      cx="620"
+                      cy="185"
+                      r={isTarget ? "28" : "20"}
+                      fill={isTarget ? "#117C78" : "#FFFFFF"}
+                      stroke={isTarget ? "#FFFFFF" : "#CBD5E1"}
+                      strokeWidth={isTarget ? "3" : "2"}
+                      className={isTarget ? "animate-pulse" : ""}
                     />
-                    <line x1="191" y1="75" x2="205" y2="75" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <line x1="191" y1="105" x2="205" y2="105" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <circle cx="198" cy="52" r="9" fill={isTarget ? '#315CE8' : '#F1F5F9'} />
                     <text
-                      x="198"
-                      y="56"
+                      x="620"
+                      y="192"
                       textAnchor="middle"
-                      fill={isTarget ? '#FFFFFF' : '#475569'}
-                      fontSize="10"
+                      fill={isTarget ? "#FFFFFF" : "#475569"}
+                      fontSize={isTarget ? "22" : "16"}
                       fontWeight="bold"
-                      fontFamily="monospace"
+                      fontFamily="ui-monospace, monospace"
                     >
                       L
                     </text>
@@ -479,36 +567,43 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
                 );
               })()}
 
-              {/* Right Pinky (Finger 10) - Key ; */}
+              {/* 10. Right Pinky (Finger 10) - Key ; or ShiftRight / Enter */}
               {(() => {
                 const isTarget = activeFinger?.id === 'right-pinky';
                 const isHoldShift = isShift && shiftHand === 'right';
-                const fill = isHoldShift ? '#FEF3C7' : isTarget ? '#EEF3FF' : '#FFFFFF';
-                const stroke = isHoldShift ? '#F59E0B' : isTarget ? '#315CE8' : '#CBD5E1';
-                const strokeW = isTarget || isHoldShift ? '2.5' : '1.5';
+                const isActive = isTarget || isHoldShift;
+                const strokeColor = isHoldShift ? '#F59E0B' : '#117C78';
+                const filter = isHoldShift ? 'url(#rightShiftGlow)' : 'url(#rightGlow)';
+
                 return (
                   <g className="transition-all duration-150">
-                    <rect
-                      x="219"
-                      y="70"
-                      width="26"
-                      height="80"
-                      rx="13"
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeW}
+                    {isActive && (
+                      <path
+                        d="M 748 340 C 748 270 739 253 716 253 C 694 253 684 270 684 340 L 682 450 C 682 475 748 475 748 450 Z"
+                        fill="rgba(17, 124, 120, 0.22)"
+                        stroke={strokeColor}
+                        strokeWidth="5"
+                        strokeLinejoin="round"
+                        filter={filter}
+                      />
+                    )}
+                    <circle
+                      cx="716"
+                      cy="285"
+                      r={isActive ? "28" : "20"}
+                      fill={isActive ? strokeColor : "#FFFFFF"}
+                      stroke={isActive ? "#FFFFFF" : "#CBD5E1"}
+                      strokeWidth={isActive ? "3" : "2"}
+                      className={isActive ? "animate-pulse" : ""}
                     />
-                    <line x1="225" y1="105" x2="239" y2="105" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <line x1="225" y1="125" x2="239" y2="125" stroke={stroke} strokeWidth="1" opacity="0.6" />
-                    <circle cx="232" cy="85" r="9" fill={isTarget ? '#315CE8' : isHoldShift ? '#F59E0B' : '#F1F5F9'} />
                     <text
-                      x="232"
-                      y="89"
+                      x="716"
+                      y="292"
                       textAnchor="middle"
-                      fill={isTarget || isHoldShift ? '#FFFFFF' : '#475569'}
-                      fontSize="10"
+                      fill={isActive ? "#FFFFFF" : "#475569"}
+                      fontSize={isActive ? "22" : "16"}
                       fontWeight="bold"
-                      fontFamily="monospace"
+                      fontFamily="ui-monospace, monospace"
                     >
                       {isHoldShift ? '⇧' : ';'}
                     </text>
@@ -518,7 +613,7 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
             </svg>
           </div>
 
-          {/* Right Hand Finger List Chips */}
+          {/* Right Hand Finger Chips */}
           <div className="w-full flex items-center justify-between gap-1 pt-2 border-t border-[#E1E7EF] text-[11px]">
             {rightFingers.map((f) => {
               const isTarget = activeFinger?.id === f.id;
@@ -528,7 +623,7 @@ export const HandGuide: React.FC<HandGuideProps> = ({ activeChar }) => {
                   key={f.id + f.key}
                   className={`flex flex-col items-center px-1.5 py-0.5 rounded-md transition-colors ${
                     isTarget
-                      ? 'bg-[#315CE8] text-white font-bold shadow-xs'
+                      ? 'bg-[#117C78] text-white font-bold shadow-xs ring-1 ring-[#117C78]'
                       : isHoldShift
                       ? 'bg-amber-100 text-amber-800 font-bold border border-amber-300'
                       : 'text-[#647184]'

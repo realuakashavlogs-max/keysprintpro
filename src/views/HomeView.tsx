@@ -13,11 +13,13 @@ import {
   Grid,
   Award,
   CheckCircle2,
+  Flame,
+  ExternalLink,
 } from 'lucide-react';
 import { ALL_LEVELS, getLevelById } from '../data/levels';
 import { LevelProgress, UserStats } from '../types/typing';
 import { SPONSOR_URLS } from '../data/sponsors';
-import { ExternalLink } from 'lucide-react';
+import { evaluateStreakStatus } from '../utils/streakLogic';
 
 interface HomeViewProps {
   levelsProgress: Record<number, LevelProgress>;
@@ -39,6 +41,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const activeLevel = getLevelById(activeLevelId) || ALL_LEVELS[0];
   const completedLevelsCount = Object.values(levelsProgress).filter((p) => p.completed).length;
   const isReturningUser = completedLevelsCount > 0 || activeLevelId > 1;
+  const streakStatus = evaluateStreakStatus(stats.lastActiveDate, stats.streakDays);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[78vh] py-6 px-4 max-w-4xl mx-auto">
@@ -89,6 +92,46 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <p className="mt-2 text-sm sm:text-base text-[#647184] max-w-xl mx-auto leading-relaxed">
           Select an option below to begin. No registration, setup wizards, or payment required.
         </p>
+      </div>
+
+      {/* Daily Typing Streak Dashboard Badge */}
+      <div className="w-full mb-6 rounded-2xl border border-amber-200/90 bg-gradient-to-r from-amber-50/90 via-orange-50/40 to-white p-4 sm:p-4.5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm ring-4 ring-amber-100">
+            <Flame className="h-6 w-6 fill-white" />
+          </div>
+          <div className="text-left">
+            <div className="flex items-center gap-2">
+              <span className="text-sm sm:text-base font-extrabold text-[#192230]">
+                {streakStatus.streakDays} Day Practice Streak
+              </span>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                  streakStatus.isMaintainedToday
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
+                }`}
+              >
+                {streakStatus.isMaintainedToday ? '✓ Practiced Today' : '⚡ Complete a Session Today'}
+              </span>
+            </div>
+            <p className="text-xs text-[#647184] mt-0.5">
+              {streakStatus.isMaintainedToday
+                ? 'Your daily typing streak is locked in! Consistency builds lightning-fast muscle memory.'
+                : streakStatus.streakDays > 0
+                ? `Complete any typing lesson or speed test today to advance your streak to ${streakStatus.streakDays + 1} days!`
+                : 'Practice any lesson or test today to ignite your daily typing streak!'}
+            </p>
+          </div>
+        </div>
+
+        {/* Quick Streak Info Tag */}
+        <div className="shrink-0 flex items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-white border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-900 shadow-2xs">
+            <span className="text-amber-500">🔥</span>
+            <span>{streakStatus.streakDays}d Streak Active</span>
+          </div>
+        </div>
       </div>
 
       {/* Two Primary Action Cards */}

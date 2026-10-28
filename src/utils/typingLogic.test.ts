@@ -58,7 +58,7 @@ test('Finger mapping identifies correct touch typing assignments', () => {
   assert.equal(getFingerForKey('j')?.id, 'right-index');
   assert.equal(getFingerForKey('k')?.id, 'right-middle');
   assert.equal(getFingerForKey('l')?.id, 'right-ring');
-  assert.equal(getFingerForKey(';')?.[0]?.id || getFingerForKey(';')?.id, 'right-pinky');
+  assert.equal(getFingerForKey(';')?.id, 'right-pinky');
 
   // Space
   assert.equal(getFingerForKey(' ')?.id, 'thumb');

@@ -13,6 +13,8 @@ import {
   BookOpen,
   ArrowRight,
   Sparkles,
+  ExternalLink,
+  Hand,
 } from 'lucide-react';
 import { ALL_LEVELS, getLevelById, getNextLevel } from '../data/levels';
 import { Level, LevelProgress, UserSettings, UserStats } from '../types/typing';
@@ -20,6 +22,7 @@ import { TypingResult } from '../components/TypingArea';
 import { AnimatedKeyboardWithHands } from '../components/AnimatedKeyboardWithHands';
 import { LevelCompletionModal } from '../components/LevelCompletionModal';
 import { SponsorInterstitial } from '../components/SponsorInterstitial';
+import { SPONSOR_URLS } from '../data/sponsors';
 import {
   calculateWpm,
   calculateAccuracy,
@@ -71,7 +74,9 @@ export const LessonView: React.FC<LessonViewProps> = ({
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [physicallyPressedKey, setPhysicallyPressedKey] = useState<string>('');
+  const [errorKey, setErrorKey] = useState<string>('');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(settings.soundEnabled);
+  const [showHands, setShowHands] = useState<boolean>(true);
 
   // Modals
   const [isResultModalOpen, setIsResultModalOpen] = useState<boolean>(false);
@@ -116,6 +121,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
     setElapsedSeconds(0);
     setIsCompleted(false);
     setPhysicallyPressedKey('');
+    setErrorKey('');
     setIsResultModalOpen(false);
     setIsInterstitialOpen(false);
     if (timerRef.current) clearInterval(timerRef.current);
@@ -291,6 +297,8 @@ export const LessonView: React.FC<LessonViewProps> = ({
           if (soundEnabled) soundEngine.playKeyClick();
         } else {
           setErrorCount((prev) => prev + 1);
+          setErrorKey(e.key);
+          setTimeout(() => setErrorKey(''), 220);
           if (soundEnabled) soundEngine.playErrorBuzz();
         }
 
@@ -416,6 +424,19 @@ export const LessonView: React.FC<LessonViewProps> = ({
         <div className="flex items-center gap-1.5">
           <button
             type="button"
+            onClick={() => setShowHands((prev) => !prev)}
+            title={showHands ? 'Hide real hands guidance' : 'Show real hands guidance'}
+            className={`p-1.5 rounded-lg border border-[#E1E7EF] transition-colors cursor-pointer ${
+              showHands
+                ? 'bg-[#EEF3FF] text-[#315CE8] border-[#315CE8]/30 font-bold'
+                : 'bg-white text-[#647184] hover:bg-slate-50'
+            }`}
+          >
+            <Hand className="h-3.5 w-3.5" />
+          </button>
+
+          <button
+            type="button"
             onClick={resetExercise}
             title="Restart exercise"
             className="p-1.5 rounded-lg border border-[#E1E7EF] bg-white text-[#647184] hover:text-[#192230] hover:bg-slate-50 transition-colors cursor-pointer"
@@ -447,6 +468,27 @@ export const LessonView: React.FC<LessonViewProps> = ({
           </button>
         </div>
       </header>
+
+      {/* Subtle Sponsor Strip near top of lesson interface — hides automatically on short screens */}
+      <div className="hidden sm:flex w-full max-w-5xl mx-auto px-4 py-1 items-center justify-between text-[11px] text-[#647184] bg-white/70 border-b border-[#E1E7EF] shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#315CE8]">
+            Sponsor
+          </span>
+          <span className="text-[#8692A6]">
+            Featured Partner • AsiaFilm Digital Entertainment
+          </span>
+        </div>
+        <a
+          href={SPONSOR_URLS.homepage}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#315CE8] hover:text-[#2546B8] font-bold flex items-center gap-1 cursor-pointer"
+        >
+          <span>Visit Sponsor</span>
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      </div>
 
       {/* ---------------- 2. LARGE CLEAN TARGET TYPING TEXT (TOP AREA) ---------------- */}
       <main className="flex-1 flex flex-col justify-center items-center px-4 sm:px-8 max-w-4xl mx-auto w-full overflow-hidden my-auto py-2">
@@ -488,7 +530,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
           })}
         </div>
 
-        {/* Subtle Next Key Guidance Hint */}
+        {/* Real-Time Finger Highlighting & Guidance Instruction */}
         <div className="mt-3 flex items-center gap-2 text-xs text-[#647184]">
           <span>Next key:</span>
           <span className="px-2 py-0.5 rounded-md bg-white border border-[#E1E7EF] font-mono font-bold text-[#315CE8] shadow-2xs">
@@ -497,12 +539,14 @@ export const LessonView: React.FC<LessonViewProps> = ({
           {activeFingerInfo && (
             <>
               <span className="text-[#CBD5E1]">•</span>
-              <span className="flex items-center gap-1.5 font-medium">
+              <span className="flex items-center gap-1.5 font-bold text-[#192230]">
                 <span
-                  className="h-2 w-2 rounded-full inline-block"
+                  className="h-2.5 w-2.5 rounded-full inline-block"
                   style={{ backgroundColor: activeFingerInfo.colorHex }}
                 />
-                <span>{activeFingerInfo.name}</span>
+                <span>
+                  Use your {activeFingerInfo.name.toLowerCase()} finger.
+                </span>
               </span>
             </>
           )}
@@ -515,7 +559,8 @@ export const LessonView: React.FC<LessonViewProps> = ({
           <AnimatedKeyboardWithHands
             activeChar={activeChar}
             physicallyPressedKey={physicallyPressedKey}
-            showHands={true}
+            errorKey={errorKey}
+            showHands={showHands}
             showFingerColors={true}
             theme="light"
           />

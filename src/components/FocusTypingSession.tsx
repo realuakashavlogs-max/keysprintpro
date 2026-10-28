@@ -65,6 +65,7 @@ export const FocusTypingSession: React.FC<FocusTypingSessionProps> = ({
   const [totalKeystrokes, setTotalKeystrokes] = useState<number>(0);
   const [errorCount, setErrorCount] = useState<number>(0);
   const [physicallyPressedKey, setPhysicallyPressedKey] = useState<string>('');
+  const [errorKey, setErrorKey] = useState<string>('');
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [finalResult, setFinalResult] = useState<TypingResult | null>(null);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -232,6 +233,8 @@ export const FocusTypingSession: React.FC<FocusTypingSessionProps> = ({
         soundEngine.playKeyClick();
       } else {
         setErrorCount((prev) => prev + 1);
+        setErrorKey(e.key);
+        setTimeout(() => setErrorKey(''), 220);
         soundEngine.playErrorBuzz();
       }
 
@@ -439,6 +442,7 @@ export const FocusTypingSession: React.FC<FocusTypingSessionProps> = ({
         <AnimatedKeyboardWithHands
           activeChar={activeChar}
           physicallyPressedKey={physicallyPressedKey}
+          errorKey={errorKey}
           showHands={showHands}
           showFingerColors={true}
           theme="dark"

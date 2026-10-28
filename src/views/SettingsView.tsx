@@ -44,7 +44,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     soundEngine.playKeyClick();
   };
 
-  const handleSoundTypeChange = (type: 'mechanical' | 'soft' | 'beep') => {
+  const handleSoundTypeChange = (type: 'mechanical' | 'typewriter' | 'soft' | 'beep') => {
     const updated = { ...settings, soundType: type };
     onUpdateSettings(updated);
     soundEngine.configure(updated.soundEnabled, updated.soundVolume, updated.soundType);
@@ -133,8 +133,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           {settings.soundEnabled && (
             <div className="flex flex-col gap-2 pt-3 border-t border-[#E1E7EF]">
               <span className="text-xs font-bold text-[#647184]">Audio Character Profile</span>
-              <div className="grid grid-cols-3 gap-2">
-                {(['mechanical', 'soft', 'beep'] as const).map((type) => (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(['mechanical', 'typewriter', 'soft', 'beep'] as const).map((type) => (
                   <button
                     key={type}
                     type="button"
@@ -145,7 +145,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         : 'border-[#E1E7EF] bg-[#F8FAFC] text-[#647184] hover:text-[#192230]'
                     }`}
                   >
-                    {type === 'mechanical' ? 'Mechanical Click' : type === 'soft' ? 'Soft Clack' : 'Digital Beep'}
+                    {type === 'mechanical'
+                      ? 'Mechanical'
+                      : type === 'typewriter'
+                      ? 'Typewriter'
+                      : type === 'soft'
+                      ? 'Soft Tap'
+                      : 'Digital Beep'}
                   </button>
                 ))}
               </div>

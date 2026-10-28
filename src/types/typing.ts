@@ -104,7 +104,7 @@ export interface UserStats {
 export interface UserSettings {
   soundEnabled: boolean;
   soundVolume: number; // 0 to 1
-  soundType: 'mechanical' | 'soft' | 'beep';
+  soundType: 'mechanical' | 'soft' | 'typewriter' | 'beep';
   showVirtualKeyboard: boolean;
   showFingerGuide: boolean;
   showLiveWpm: boolean;

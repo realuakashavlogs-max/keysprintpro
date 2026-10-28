@@ -4,6 +4,7 @@
  */
 
 import { LevelProgress, PracticeHistoryItem, UserSettings, UserStats } from '../types/typing';
+import { evaluateStreakStatus, recordPracticeStreak } from './streakLogic';
 
 const STORAGE_KEYS = {
   LEVELS_PROGRESS: 'typingmaster_levels_progress_v1',
@@ -119,8 +120,12 @@ export function saveLevelsProgress(progress: Record<number, LevelProgress>): voi
 export function loadUserStats(): UserStats {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.USER_STATS);
-    if (!raw) return { ...DEFAULT_USER_STATS };
-    return { ...DEFAULT_USER_STATS, ...JSON.parse(raw) };
+    const parsed = raw ? JSON.parse(raw) : {};
+    const merged: UserStats = { ...DEFAULT_USER_STATS, ...parsed };
+    // Check if streak was broken due to missed days
+    const status = evaluateStreakStatus(merged.lastActiveDate, merged.streakDays);
+    merged.streakDays = status.streakDays;
+    return merged;
   } catch {
     return { ...DEFAULT_USER_STATS };
   }
@@ -235,17 +240,10 @@ export function recordAssessmentResult(
     stats.averageAccuracy = Math.round((stats.totalCorrectChars / stats.totalKeystrokes) * 1000) / 10;
   }
 
-  // Calculate streak
-  const today = new Date().toISOString().split('T')[0];
-  if (stats.lastActiveDate !== today) {
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    if (stats.lastActiveDate === yesterday) {
-      stats.streakDays += 1;
-    } else {
-      stats.streakDays = 1;
-    }
-    stats.lastActiveDate = today;
-  }
+  // Calculate and record daily streak
+  const streakUpdate = recordPracticeStreak(stats.lastActiveDate, stats.streakDays);
+  stats.streakDays = streakUpdate.newStreak;
+  stats.lastActiveDate = streakUpdate.newActiveDate;
 
   // Add to practice history (limit to last 50 items)
   const historyItem: PracticeHistoryItem = {
@@ -292,6 +290,11 @@ export function recordPracticeSession(
   if (stats.totalKeystrokes > 0) {
     stats.averageAccuracy = Math.round((stats.totalCorrectChars / stats.totalKeystrokes) * 1000) / 10;
   }
+
+  // Update daily streak for practice sessions too
+  const streakUpdate = recordPracticeStreak(stats.lastActiveDate, stats.streakDays);
+  stats.streakDays = streakUpdate.newStreak;
+  stats.lastActiveDate = streakUpdate.newActiveDate;
 
   const historyItem: PracticeHistoryItem = {
     id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,

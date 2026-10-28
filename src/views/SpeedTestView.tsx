@@ -242,10 +242,12 @@ export const SpeedTestView: React.FC<SpeedTestViewProps> = ({
             onComplete={handleComplete}
           />
 
-          <VirtualKeyboard
+          <AnimatedKeyboardWithHands
             activeChar={activeChar}
             physicallyPressedKey={physicalKey}
+            showHands={true}
             showFingerColors={true}
+            theme="light"
           />
         </div>
       )}
